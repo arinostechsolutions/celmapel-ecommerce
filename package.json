@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:debug": "rm -rf .next && NODE_ENV=production next build --debug --debug-prerender",
+    "build:ci": "rm -rf .next node_modules && npm ci && NODE_ENV=production next build",
+    "build:no-lint": "next build --no-lint",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
