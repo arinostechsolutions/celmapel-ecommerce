@@ -11,7 +11,7 @@
     "build:debug": "rm -rf .next && NODE_ENV=production next build --debug --debug-prerender",
     "build:ci": "rm -rf .next node_modules && npm ci && NODE_ENV=production next build",
     "build:no-lint": "next build --no-lint",
-    "start": "next start",
+    "start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "seed": "tsx scripts/seed.ts"
