@@ -75,9 +75,9 @@ async function getDashboardData(): Promise<DashboardData> {
       topViewed,
       topCheckout,
     ] = await Promise.all([
-      Event.countDocuments({ storeId: rawId, type: 'view',               createdAt: { $gte: monthAgo } }),
-      Event.countDocuments({ storeId: rawId, type: 'add_to_cart',        createdAt: { $gte: monthAgo } }),
-      Event.countDocuments({ storeId: rawId, type: 'checkout_initiated', createdAt: { $gte: monthAgo } }),
+      Event.countDocuments({ $or: [{ storeId: rawId }, { storeId: storeOid }], type: 'view',               createdAt: { $gte: monthAgo } }),
+      Event.countDocuments({ $or: [{ storeId: rawId }, { storeId: storeOid }], type: 'add_to_cart',        createdAt: { $gte: monthAgo } }),
+      Event.countDocuments({ $or: [{ storeId: rawId }, { storeId: storeOid }], type: 'checkout_initiated', createdAt: { $gte: monthAgo } }),
       // countDocuments aceita string ou ObjectId — testa os dois para robustez
       Campaign.countDocuments({ $or: [{ storeId: rawId }, { storeId: storeOid }], isActive: true }),
 
@@ -100,9 +100,9 @@ async function getDashboardData(): Promise<DashboardData> {
         .select('items subtotal discountAmount total createdAt whatsappUrl utmSource utmMedium utmCampaign')
         .lean(),
 
-      // Agrega {day, type, count} — aggregate não tem auto-cast, usa ObjectId
+      // Agrega {day, type, count}
       Event.aggregate([
-        { $match: { storeId: storeOid, createdAt: { $gte: monthAgo } } },
+        { $match: { $or: [{ storeId: rawId }, { storeId: storeOid }], createdAt: { $gte: monthAgo } } },
         {
           $group: {
             _id: {
@@ -116,7 +116,7 @@ async function getDashboardData(): Promise<DashboardData> {
       ]),
 
       Event.aggregate([
-        { $match: { storeId: storeOid, type: 'view', createdAt: { $gte: monthAgo } } },
+        { $match: { $or: [{ storeId: rawId }, { storeId: storeOid }], type: 'view', createdAt: { $gte: monthAgo } } },
         { $group: { _id: '$productId', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 8 },
@@ -126,7 +126,7 @@ async function getDashboardData(): Promise<DashboardData> {
       ]),
 
       Event.aggregate([
-        { $match: { storeId: storeOid, type: 'checkout_initiated', createdAt: { $gte: monthAgo } } },
+        { $match: { $or: [{ storeId: rawId }, { storeId: storeOid }], type: 'checkout_initiated', createdAt: { $gte: monthAgo } } },
         { $group: { _id: '$productId', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 8 },

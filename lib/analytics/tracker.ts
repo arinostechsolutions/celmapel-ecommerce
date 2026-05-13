@@ -1,3 +1,4 @@
+import mongoose from 'mongoose'
 import connectDB from '@/lib/db/mongoose'
 import Event from '@/lib/db/models/event'
 import Product from '@/lib/db/models/product'
@@ -27,9 +28,14 @@ export async function trackEvent(params: TrackEventParams): Promise<EventDocumen
   try {
     await connectDB()
 
+    // Converte storeId e productId para ObjectId explicitamente
+    // para garantir consistência independente do que o chamador passou
+    const storeOid   = mongoose.isValidObjectId(params.storeId)   ? new mongoose.Types.ObjectId(params.storeId)   : params.storeId
+    const productOid = mongoose.isValidObjectId(params.productId) ? new mongoose.Types.ObjectId(params.productId) : params.productId
+
     const event = await Event.create({
-      storeId: params.storeId,
-      productId: params.productId,
+      storeId: storeOid,
+      productId: productOid,
       type: params.type,
       userId: params.userId,
       sessionId: params.sessionId,
