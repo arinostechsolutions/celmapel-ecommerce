@@ -54,7 +54,7 @@ const PASSWORD_RULES = [
 export default function ProfilePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const isNewAccount = searchParams.get('boas-vindas') === '1'
+  const isNewAccount = searchParams?.get('boas-vindas') === '1'
   const [user, setUser] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'info' | 'password'>('info')

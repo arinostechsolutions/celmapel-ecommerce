@@ -20,7 +20,7 @@ export function SearchFilters({ categories }: SearchFiltersProps) {
 
   const updateParam = useCallback(
     (key: string, value: string | null) => {
-      const params = new URLSearchParams(searchParams.toString())
+      const params = new URLSearchParams((searchParams?.toString() ?? ""))
       if (value) {
         params.set(key, value)
       } else {
@@ -46,7 +46,7 @@ export function SearchFilters({ categories }: SearchFiltersProps) {
             <button
               onClick={() => updateParam('categoryId', null)}
               className={`text-sm w-full text-left px-2 py-1 rounded-lg transition-colors ${
-                !searchParams.get('categoryId')
+                !searchParams?.get('categoryId')
                   ? 'bg-purple-100 text-purple-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
@@ -59,7 +59,7 @@ export function SearchFilters({ categories }: SearchFiltersProps) {
               <button
                 onClick={() => updateParam('categoryId', String(cat._id))}
                 className={`text-sm w-full text-left px-2 py-1 rounded-lg transition-colors ${
-                  searchParams.get('categoryId') === String(cat._id)
+                  searchParams?.get('categoryId') === String(cat._id)
                     ? 'bg-purple-100 text-purple-700 font-medium'
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
@@ -75,7 +75,7 @@ export function SearchFilters({ categories }: SearchFiltersProps) {
       <div className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Ordenar por</p>
         <select
-          value={searchParams.get('sort') ?? 'createdAt'}
+          value={searchParams?.get('sort') ?? 'createdAt'}
           onChange={(e) => updateParam('sort', e.target.value)}
           className="w-full h-9 px-2 rounded-lg border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
         >
@@ -94,7 +94,7 @@ export function SearchFilters({ categories }: SearchFiltersProps) {
           <input
             type="number"
             placeholder="Min"
-            defaultValue={searchParams.get('minPrice') ?? ''}
+            defaultValue={searchParams?.get('minPrice') ?? ''}
             onChange={(e) => updateParam('minPrice', e.target.value || null)}
             className="w-full h-9 px-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
           />
@@ -102,7 +102,7 @@ export function SearchFilters({ categories }: SearchFiltersProps) {
           <input
             type="number"
             placeholder="Máx"
-            defaultValue={searchParams.get('maxPrice') ?? ''}
+            defaultValue={searchParams?.get('maxPrice') ?? ''}
             onChange={(e) => updateParam('maxPrice', e.target.value || null)}
             className="w-full h-9 px-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
           />

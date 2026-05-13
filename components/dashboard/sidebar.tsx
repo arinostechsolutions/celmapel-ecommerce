@@ -40,7 +40,7 @@ function NavItem({
   icon: React.ComponentType<{ className?: string }>
   exact?: boolean
 }) {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
   const isActive = exact ? pathname === href : pathname.startsWith(href)
 
   return (

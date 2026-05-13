@@ -12,7 +12,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  if (AUTH_ROUTES.includes(pathname)) {
+  if (pathname && AUTH_ROUTES.includes(pathname)) {
     return <>{children}</>
   }
 

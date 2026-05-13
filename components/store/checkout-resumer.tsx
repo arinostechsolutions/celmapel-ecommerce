@@ -15,13 +15,14 @@ export function CheckoutResumer() {
   const { items, openCheckout } = useCart()
 
   useEffect(() => {
-    if (searchParams.get('resume_checkout') !== '1') return
+    if (searchParams?.get('resume_checkout') !== '1') return
     if (items.length === 0) return
 
     // Remove o param da URL sem recarregar
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams((searchParams?.toString() ?? ""))
     params.delete('resume_checkout')
-    const clean = params.size > 0 ? `${pathname}?${params}` : pathname
+    const basePath = pathname ?? '/'
+    const clean = params.size > 0 ? `${basePath}?${params}` : basePath
     router.replace(clean, { scroll: false })
 
     // Pequeno delay para o DOM montar antes de abrir

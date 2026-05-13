@@ -9,9 +9,9 @@ export function UtmTracker() {
   const searchParams = useSearchParams()
 
   useEffect(() => {
-    const utmCampaign = searchParams.get('utm_campaign')
-    const utmSource   = searchParams.get('utm_source')
-    const utmMedium   = searchParams.get('utm_medium')
+    const utmCampaign = searchParams?.get('utm_campaign')
+    const utmSource   = searchParams?.get('utm_source')
+    const utmMedium   = searchParams?.get('utm_medium')
 
     if (!utmCampaign) return
 

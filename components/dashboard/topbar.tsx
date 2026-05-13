@@ -20,7 +20,7 @@ interface DashboardTopbarProps {
 }
 
 export function DashboardTopbar({ onMenuToggle }: DashboardTopbarProps) {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 

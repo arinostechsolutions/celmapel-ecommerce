@@ -20,7 +20,7 @@ interface CategoryBarProps {
 export function CategoryBar({ categories }: CategoryBarProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const currentCategoryId = searchParams.get('categoryId')
+  const currentCategoryId = searchParams?.get('categoryId')
 
   const isHome = pathname === '/' && !currentCategoryId
 

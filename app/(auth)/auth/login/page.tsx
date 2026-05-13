@@ -25,7 +25,7 @@ type LoginForm = z.infer<typeof LoginSchema>
 function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const next = searchParams.get('next') // e.g. "checkout"
+  const next = searchParams?.get('next') ?? null
   const [showPassword, setShowPassword] = useState(false)
   const [serverError, setServerError] = useState('')
   const [cpfDisplay, setCpfDisplay] = useState('')

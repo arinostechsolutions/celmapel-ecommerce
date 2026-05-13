@@ -27,10 +27,10 @@ export function FilterBar({ categories, totalProducts }: FilterBarProps) {
   const searchParams = useSearchParams()
   const [sheetOpen, setSheetOpen] = useState(false)
 
-  const activeCategoryId = searchParams.get('categoryId')
-  const activeSort       = searchParams.get('sort') ?? 'createdAt'
-  const activeMinPrice   = searchParams.get('minPrice') ?? ''
-  const activeMaxPrice   = searchParams.get('maxPrice') ?? ''
+  const activeCategoryId = searchParams?.get('categoryId')
+  const activeSort       = searchParams?.get('sort') ?? 'createdAt'
+  const activeMinPrice   = searchParams?.get('minPrice') ?? ''
+  const activeMaxPrice   = searchParams?.get('maxPrice') ?? ''
 
   const [minPrice, setMinPrice] = useState(activeMinPrice)
   const [maxPrice, setMaxPrice] = useState(activeMaxPrice)
@@ -43,7 +43,7 @@ export function FilterBar({ categories, totalProducts }: FilterBarProps) {
   ].filter(Boolean).length
 
   const navigate = useCallback((overrides: Record<string, string | null>) => {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams((searchParams?.toString() ?? ""))
     Object.entries(overrides).forEach(([k, v]) => {
       if (v) params.set(k, v); else params.delete(k)
     })
