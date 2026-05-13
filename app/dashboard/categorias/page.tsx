@@ -22,7 +22,7 @@ export default async function CategoriesPage() {
         <h1 className="text-xl font-bold text-gray-900">Categorias</h1>
         <p className="text-sm text-gray-500 mt-0.5">Gerencie as categorias visíveis na loja</p>
       </div>
-      <CategoriesManager categories={categories as Parameters<typeof CategoriesManager>[0]['categories']} />
+      <CategoriesManager categories={categories as unknown as Parameters<typeof CategoriesManager>[0]['categories']} />
     </div>
   )
 }

@@ -27,8 +27,8 @@ export default async function BannersPage() {
         <p className="text-sm text-gray-500 mt-0.5">Gerencie os banners promocionais da loja</p>
       </div>
       <BannersManager
-        banners={banners as Parameters<typeof BannersManager>[0]['banners']}
-        categories={categories as Parameters<typeof BannersManager>[0]['categories']}
+        banners={banners as unknown as Parameters<typeof BannersManager>[0]['banners']}
+        categories={categories as unknown as Parameters<typeof BannersManager>[0]['categories']}
       />
     </div>
   )

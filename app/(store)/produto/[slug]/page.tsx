@@ -66,8 +66,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   return (
     <ProductDetail
-      product={product as Parameters<typeof ProductDetail>[0]['product']}
-      related={related as Parameters<typeof ProductDetail>[0]['related']}
+      product={product as unknown as Parameters<typeof ProductDetail>[0]['product']}
+      related={related as unknown as Parameters<typeof ProductDetail>[0]['related']}
     />
   )
 }

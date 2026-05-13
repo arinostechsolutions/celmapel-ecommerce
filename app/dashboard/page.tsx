@@ -276,7 +276,7 @@ export default async function DashboardPage() {
       <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-card">
         <h2 className="font-semibold text-gray-900 mb-1">Últimos Pedidos via WhatsApp</h2>
         <p className="text-xs text-gray-400 mb-4">Registros de checkout iniciados na loja</p>
-        <RecentOrdersTable orders={d.recentOrders as Parameters<typeof RecentOrdersTable>[0]['orders']} />
+        <RecentOrdersTable orders={d.recentOrders as unknown as Parameters<typeof RecentOrdersTable>[0]['orders']} />
       </div>
 
     </div>

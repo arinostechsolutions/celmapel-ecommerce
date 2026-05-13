@@ -23,7 +23,7 @@ const Schema = z.object({
   isActive:    z.boolean().default(true),
 })
 
-type FormData = z.infer<typeof Schema>
+type FormData = z.input<typeof Schema>
 
 const APP_URL = typeof window !== 'undefined' ? window.location.origin : ''
 

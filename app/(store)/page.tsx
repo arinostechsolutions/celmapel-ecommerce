@@ -62,13 +62,13 @@ export default async function HomePage() {
   return (
     <div className="space-y-10">
       {banners.length > 0 && (
-        <BannerCarousel banners={banners as Parameters<typeof BannerCarousel>[0]['banners']} />
+        <BannerCarousel banners={banners as unknown as Parameters<typeof BannerCarousel>[0]['banners']} />
       )}
 
       {featured.length > 0 && (
         <ProductsSection
           title="Produtos em Destaque"
-          products={featured as Parameters<typeof ProductsSection>[0]['products']}
+          products={featured as unknown as Parameters<typeof ProductsSection>[0]['products']}
           viewAllHref="/busca"
         />
       )}
@@ -76,7 +76,7 @@ export default async function HomePage() {
       {bestSellers.length > 0 && (
         <ProductsSection
           title="Mais Vendidos"
-          products={bestSellers as Parameters<typeof ProductsSection>[0]['products']}
+          products={bestSellers as unknown as Parameters<typeof ProductsSection>[0]['products']}
           viewAllHref="/busca?sort=orderCount"
         />
       )}
@@ -84,7 +84,7 @@ export default async function HomePage() {
       {promoProducts.length > 0 && (
         <ProductsSection
           title="Promoções"
-          products={promoProducts as Parameters<typeof ProductsSection>[0]['products']}
+          products={promoProducts as unknown as Parameters<typeof ProductsSection>[0]['products']}
           viewAllHref="/busca"
           highlight
         />

@@ -89,7 +89,7 @@ function PriceInput({
 const Schema = z.object({
   name:        z.string().min(1, 'Nome obrigatório').max(200).trim(),
   description: z.string().max(5000).optional(),
-  price:       z.number({ invalid_type_error: 'Preço inválido' }).positive('Preço deve ser maior que zero'),
+  price:       z.number({ error: "Preço inválido" }).positive('Preço deve ser maior que zero'),
   promoPrice:  z.number().positive('Deve ser maior que zero').optional(),
   sku:         z.string().max(100).optional(),
   categoryId:  z.string().min(1, 'Categoria obrigatória'),

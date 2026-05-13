@@ -5,14 +5,14 @@ import Cart from '@/lib/db/models/cart'
 import Product from '@/lib/db/models/product'
 import Coupon from '@/lib/db/models/coupon'
 import { ok, badRequest, notFound, internalError } from '@/lib/api/response'
-import { extractToken, getAuthHeader } from '@/lib/api/auth-guard'
 import { verifyAccessToken } from '@/lib/auth/jwt'
 import { mongoIdSchema } from '@/lib/security/validate'
 
 const DEFAULT_STORE_ID = process.env.DEFAULT_STORE_ID ?? ''
 
 function getCartIdentity(req: NextRequest): { userId?: string; sessionId?: string } {
-  const token = extractToken(getAuthHeader(req))
+  const authHeader = req.headers.get('authorization')
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : req.cookies.get('access_token')?.value
   if (token) {
     try {
       const payload = verifyAccessToken(token)

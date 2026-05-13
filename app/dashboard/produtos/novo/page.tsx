@@ -15,7 +15,7 @@ export default async function NewProductPage() {
       .sort({ order: 1 })
       .select('name')
       .lean()
-    categories = serialize(raw) as typeof categories
+    categories = serialize(raw) as unknown as typeof categories
   } catch { /* sem banco */ }
 
   return <NewProductForm categories={categories} />

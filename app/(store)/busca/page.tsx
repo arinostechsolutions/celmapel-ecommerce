@@ -50,8 +50,10 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   const sortOrder = sortMap[sort] ?? { createdAt: -1 }
 
-  let products: ReturnType<typeof serialize>[] = []
-  let categories: ReturnType<typeof serialize>[] = []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let products: Array<Record<string, any>> = []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let categories: Array<Record<string, any>> = []
 
   try {
     await connectDB()
@@ -85,7 +87,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       {/* Barra de filtros com chips de categoria */}
       <Suspense>
         <FilterBar
-          categories={categories as Parameters<typeof FilterBar>[0]['categories']}
+          categories={categories as unknown as Parameters<typeof FilterBar>[0]['categories']}
           totalProducts={products.length}
         />
       </Suspense>
@@ -103,7 +105,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             {products.map((product) => (
               <ProductCard
                 key={product._id}
-                product={product as Parameters<typeof ProductCard>[0]['product']}
+                product={product as unknown as Parameters<typeof ProductCard>[0]['product']}
               />
             ))}
           </div>

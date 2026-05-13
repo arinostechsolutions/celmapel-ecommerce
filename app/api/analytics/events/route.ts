@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { trackEvent, type EventType } from '@/lib/analytics/tracker'
 import { checkRateLimit } from '@/lib/security/rate-limit'
-import { extractToken, getAuthHeader } from '@/lib/api/auth-guard'
 import { verifyAccessToken } from '@/lib/auth/jwt'
 import { ok, badRequest, internalError } from '@/lib/api/response'
 import { mongoIdSchema } from '@/lib/security/validate'
@@ -28,7 +27,8 @@ export async function POST(req: NextRequest) {
 
     if (!parsed.success) return badRequest('Dados inválidos')
 
-    const token = extractToken(getAuthHeader(req))
+    const authHeader = req.headers.get('authorization')
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : req.cookies.get('access_token')?.value
     let userId: string | undefined
     if (token) {
       try {

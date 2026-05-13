@@ -20,7 +20,7 @@ const CreateCampaignSchema = z.object({
 })
 
 export async function GET(req: NextRequest) {
-  const rl = await checkRateLimit(req, 'api')
+  const rl = await checkRateLimit(req, 'search')
   if (rl) return rl
 
   try {
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const rl = await checkRateLimit(req, 'api')
+  const rl = await checkRateLimit(req, 'search')
   if (rl) return rl
 
   try {

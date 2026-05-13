@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
@@ -22,7 +22,7 @@ const LoginSchema = z.object({
 
 type LoginForm = z.infer<typeof LoginSchema>
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const next = searchParams.get('next') // e.g. "checkout"
@@ -148,5 +148,13 @@ export default function LoginPage() {
         <span>Seus dados são protegidos com criptografia</span>
       </div>
     </>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
   )
 }

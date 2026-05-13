@@ -46,7 +46,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
         storeLogo={store?.logo}
       >
         <Suspense>
-          <CategoryBar categories={categories as Parameters<typeof CategoryBar>[0]['categories']} />
+          <CategoryBar categories={categories as unknown as unknown as Parameters<typeof CategoryBar>[0]['categories']} />
         </Suspense>
         <main
           className="max-w-7xl mx-auto px-4"
@@ -55,7 +55,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
           {children}
         </main>
       </StoreShell>
-      <StoreFooter store={store as Parameters<typeof StoreFooter>[0]['store']} />
+      <StoreFooter store={store as unknown as Parameters<typeof StoreFooter>[0]['store']} />
     </div>
     </LightboxProvider>
   )

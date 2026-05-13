@@ -75,7 +75,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-card">
         <ProductsTable
-          products={products as Parameters<typeof ProductsTable>[0]['products']}
+          products={products as unknown as Parameters<typeof ProductsTable>[0]['products']}
           q={q}
           status={status}
         />

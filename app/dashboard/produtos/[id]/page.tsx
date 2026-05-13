@@ -35,8 +35,8 @@ export default async function EditProductPage({ params }: PageProps) {
 
     if (!raw) notFound()
 
-    product    = serialize(raw) as Record<string, unknown>
-    categories = serialize(cats) as typeof categories
+    product    = serialize(raw) as unknown as Record<string, unknown>
+    categories = serialize(cats) as unknown as typeof categories
   } catch {
     notFound()
   }
