@@ -1,5 +1,9 @@
 import Link from 'next/link'
 
+// Evita prerender estático da rota interna /_not-found em CI.
+// Mesma proteção aplicada em global-error.tsx contra crash de useContext null.
+export const dynamic = 'force-dynamic'
+
 export default function NotFound() {
   return (
     <div className="min-h-[60vh] flex items-center justify-center flex-col gap-4 px-6 text-center">
