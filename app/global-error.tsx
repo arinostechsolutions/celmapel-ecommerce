@@ -1,5 +1,10 @@
 'use client'
 
+// Evita prerender estático da rota interna /_global-error em CI.
+// O 'use client' sozinho não impede o Next.js de gerar prerender estático,
+// e o contexto React fica null durante essa fase, causando crash.
+export const dynamic = 'force-dynamic'
+
 export default function GlobalError({
   error,
   reset,
