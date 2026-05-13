@@ -1,3 +1,7 @@
+// Força renderização dinâmica: página depende de DB e não deve ser
+// prerendered em build (MONGODB_URI pode não estar disponível em CI).
+export const dynamic = 'force-dynamic'
+
 import { notFound } from 'next/navigation'
 import connectDB from '@/lib/db/mongoose'
 import Product from '@/lib/db/models/product'
