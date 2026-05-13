@@ -94,7 +94,7 @@ async function getDashboardData(): Promise<DashboardData> {
         .select('name clickCount')
         .lean(),
 
-      Order.find({ storeId: rawId })
+      Order.find({ $or: [{ storeId: rawId }, { storeId: storeOid }] })
         .sort({ createdAt: -1 })
         .limit(8)
         .select('items subtotal discountAmount total createdAt whatsappUrl utmSource utmMedium utmCampaign')
@@ -136,23 +136,22 @@ async function getDashboardData(): Promise<DashboardData> {
       ]),
     ])
 
-    // Pivota {day, type, count} → [{day, view, add_to_cart, checkout_initiated}]
+    // Preenche todos os 30 dias com zeros — garante eixo X contínuo no gráfico
     const dayMap = new Map<string, DayActivity>()
+    for (let i = 29; i >= 0; i--) {
+      const d   = subDays(today, i)
+      const key = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+      dayMap.set(key, { day: key, view: 0, add_to_cart: 0, checkout_initiated: 0 })
+    }
     for (const row of rawByDay) {
-      const key = row._id.day as string
-      if (!dayMap.has(key)) {
-        dayMap.set(key, { day: key, view: 0, add_to_cart: 0, checkout_initiated: 0 })
-      }
-      const entry = dayMap.get(key)!
-      const type  = row._id.type as keyof Omit<DayActivity, 'day'>
+      const key  = row._id.day as string
+      const entry = dayMap.get(key)
+      if (!entry) continue
+      const type = row._id.type as keyof Omit<DayActivity, 'day'>
       if (type in entry) entry[type] = row.count as number
     }
-
-    const activityByDay = [...dayMap.values()].sort((a, b) => {
-      // Ordena por data real (dd/mm → mm/dd para comparação)
-      const parse = (s: string) => { const [d, m] = s.split('/'); return +m * 100 + +d }
-      return parse(a.day) - parse(b.day)
-    })
+    // Map já está ordenado cronologicamente pela inserção acima
+    const activityByDay = [...dayMap.values()]
 
     const conversionRate        = views > 0 ? ((checkouts / views) * 100).toFixed(1) : '0.0'
     const totalCampaignClicks   = (rawClicksAgg as Array<{ total: number }>)[0]?.total ?? 0
