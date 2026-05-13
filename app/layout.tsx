@@ -8,6 +8,20 @@ const inter = Inter({
   display: 'swap',
 })
 
+function safeAppUrl(): URL {
+  const raw = process.env.NEXT_PUBLIC_APP_URL?.trim()
+  const fallback = 'http://localhost:3000'
+  if (!raw) return new URL(fallback)
+  try {
+    return new URL(raw)
+  } catch {
+    // Variável mal-configurada (ex.: contém "NOME=valor"). Faz fallback
+    // em vez de quebrar o build inteiro.
+    console.warn(`[layout] NEXT_PUBLIC_APP_URL inválida: "${raw}". Usando fallback.`)
+    return new URL(fallback)
+  }
+}
+
 export const metadata: Metadata = {
   title: {
     template: '%s | Celmapel Festas',
@@ -15,7 +29,7 @@ export const metadata: Metadata = {
   },
   description:
     'A melhor loja de artigos para festas, balas, chocolates e doces. Qualidade e variedade em um só lugar.',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
+  metadataBase: safeAppUrl(),
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
