@@ -1,97 +1,95 @@
-# Celmapel Festas — E-commerce + Dashboard
+# Selmapel E-commerce
 
-Plataforma de e-commerce WhatsApp Commerce com painel administrativo completo.
+Plataforma de e-commerce com checkout via WhatsApp, dashboard administrativo e analytics comportamental. Construída com Next.js 15, MongoDB, Cloudinary e JWT.
 
 ## Stack
 
-- **Next.js 15** (App Router, Server Components, ISR)
-- **TypeScript** (strict mode)
-- **MongoDB** (Mongoose, índices compostos)
-- **Redis** (Upstash — cache, rate limiting, sessões)
-- **Tailwind CSS** com design system via CSS Variables
-- **Zustand** (estado do carrinho, persistência localStorage)
-- **Cloudinary** (upload seguro via assinatura server-side)
-- **JWT + Refresh Token rotativo** (HttpOnly cookies)
-- **Lucide Icons**
+| Camada | Tecnologia |
+|--------|-----------|
+| Framework | Next.js 15 (App Router, Server Components) |
+| Linguagem | TypeScript (strict) |
+| Banco de dados | MongoDB Atlas + Mongoose |
+| Cache / Rate limit | Upstash Redis |
+| Autenticação | JWT (access 2h + refresh 7d) via `jsonwebtoken` / `jose` |
+| Imagens | Cloudinary (upload direto assinado) |
+| Estilização | Tailwind CSS v4 |
+| Estado (carrinho) | Zustand |
+| Formulários | react-hook-form + Zod |
+| Animações | Framer Motion |
+| Gráficos | Recharts |
 
-## Arquitetura
+---
+
+## Estrutura de pastas
 
 ```
 app/
-├── (store)/           # E-commerce público (cliente final)
-│   ├── page.tsx       # Home: banners, destaques, mais vendidos, promoções
-│   ├── produto/[slug] # Detalhe do produto + galeria + variações
-│   ├── categoria/[slug]
-│   ├── busca/         # Busca com filtros (categoria, preço, ordenação)
-│   ├── carrinho/
-│   └── auth/          # Login, cadastro, recuperação de senha
-│
-└── dashboard/         # Painel administrativo
-    ├── page.tsx       # Overview: KPIs, gráficos, últimos pedidos
-    ├── produtos/      # CRUD completo de produtos
-    ├── categorias/    # Gestão de categorias com ícones Lucide
-    ├── banners/       # Banners rotativos por período
-    ├── campanhas/     # Campanhas UTM + geração de QR Code
-    ├── clientes/      # Listagem de clientes cadastrados
-    └── configuracoes/ # Dados da loja, WhatsApp, sincronização
+  (store)/          → Storefront público (loja, produto, perfil)
+  (auth)/           → Páginas de login e cadastro (layout mínimo)
+  dashboard/        → Painel administrativo (protegido por JWT)
+  api/              → Rotas de API REST
+
+components/
+  store/            → Componentes da loja (header, cart, product-card…)
+  dashboard/        → Componentes do painel
+  ui/               → Componentes genéricos (Button, Input, ImageUploader…)
 
 lib/
-├── db/models/         # Schemas Mongoose (User, Store, Product, ...)
-├── auth/              # JWT, bcrypt, password helpers
-├── cache/             # Redis client (Upstash) + CACHE_KEYS
-├── security/          # Rate limiting, sanitização, validação CPF
-├── cloudinary/        # Geração de assinatura + delete de assets
-├── analytics/         # Tracking de eventos (view, add_to_cart, ...)
-└── sync/              # Serviço de sincronização com API externa
+  db/               → Conexão MongoDB + modelos Mongoose
+  auth/             → JWT helpers
+  api/              → Guards de autenticação, helpers de resposta
+  cloudinary/       → Geração de assinatura para upload
+  analytics/        → Tracker de eventos comportamentais
+  security/         → Rate limiting, sanitização HTML
+
+hooks/
+  use-cart.ts       → Zustand store do carrinho
+
+scripts/
+  seed.ts           → Popula o banco com dados de exemplo
 ```
 
-## Setup Local
+---
 
-### 1. Clonar e instalar dependências
+## Início rápido
+
+### 1. Instalar dependências
 
 ```bash
-git clone ...
-cd selmapel-ecommerce
 npm install
 ```
 
 ### 2. Configurar variáveis de ambiente
 
-```bash
-cp .env.example .env.local
+Copie `.env.example` para `.env.local` e preencha:
+
+```dotenv
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/selmapel-dev
+
+JWT_SECRET=<string aleatória >= 32 chars>
+JWT_REFRESH_SECRET=<outra string aleatória>
+
+CLOUDINARY_CLOUD_NAME=<cloud_name>
+CLOUDINARY_API_KEY=<api_key>
+CLOUDINARY_API_SECRET=<api_secret>
+
+# Opcional — rate limiting (desabilitado sem estas variáveis)
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+
+# Preenchido automaticamente após o seed
+DEFAULT_STORE_ID=
 ```
 
-Preencha `.env.local` com:
-
-| Variável | Descrição |
-|---|---|
-| `MONGODB_URI` | Connection string do MongoDB |
-| `UPSTASH_REDIS_REST_URL` | URL do Redis Upstash |
-| `UPSTASH_REDIS_REST_TOKEN` | Token do Redis Upstash |
-| `JWT_SECRET` | Secret para access tokens (≥32 chars) |
-| `JWT_REFRESH_SECRET` | Secret para refresh tokens (≥32 chars) |
-| `CLOUDINARY_CLOUD_NAME` | Nome da conta Cloudinary |
-| `CLOUDINARY_API_KEY` | API Key do Cloudinary |
-| `CLOUDINARY_API_SECRET` | API Secret do Cloudinary (nunca exposta ao cliente) |
-| `DEFAULT_STORE_ID` | ObjectId da loja no MongoDB (obtido após seed) |
-| `NEXT_PUBLIC_APP_URL` | URL base da aplicação |
-
-### 3. Executar o seed
+### 3. Popular o banco
 
 ```bash
 npm run seed
 ```
 
-O seed cria:
-- 1 loja (Celmapel Festas)
-- 5 categorias
-- 30+ produtos com imagens placeholder
-- 2 banners ativos
-- 3 campanhas UTM
-- 5 clientes de exemplo
-- Eventos e pedidos simulados para popular os gráficos
-
-**Após o seed**, copie o `DEFAULT_STORE_ID` impresso no terminal para `.env.local`.
+Copie o `DEFAULT_STORE_ID` exibido no terminal e adicione ao `.env.local`. Reinicie o servidor.
 
 ### 4. Iniciar em desenvolvimento
 
@@ -99,84 +97,129 @@ O seed cria:
 npm run dev
 ```
 
-**Acesso:**
-- Loja: http://localhost:3000
-- Dashboard: http://localhost:3000/dashboard/login
-  - Email: `admin@celmapel.com.br`
-  - Senha: `Admin@123`
+- **Loja**: http://localhost:3000  
+- **Dashboard**: http://localhost:3000/dashboard/login  
+  - CPF: `111.444.777-35` · Senha: `Admin@123`
 
-## Fluxo de Pedido via WhatsApp
+---
 
-1. Cliente adiciona produtos ao carrinho (Zustand + localStorage)
-2. Aplica cupom (validação server-side)
-3. Clica em "Finalizar pelo WhatsApp"
-4. API `/api/orders` gera a mensagem formatada
-5. Redireciona para `wa.me/{telefone}?text={mensagem_codificada}`
-6. Pedido registrado no MongoDB com status `initiated_whatsapp`
-7. UTM params propagados para atribuição de campanha
+## Funcionalidades
 
-## Upload de Imagens (Cloudinary)
+### Storefront
+- Catálogo de produtos com filtros por categoria, preço e ordenação
+- Barra de categorias horizontal com chips animados
+- Painel de filtros (bottom sheet mobile / drawer desktop)
+- Cards de produto responsivos com lightbox de imagem
+- Página de detalhe com galeria, variações e compartilhamento
+- Carrinho persistente com mini-cart dropdown
+- Checkout via WhatsApp com mensagem pré-formatada
+- Cupons de desconto
+- Autenticação por CPF com perfil e troca de senha
+- Rastreamento UTM automático de campanhas
 
-O fluxo de upload é 100% seguro:
+### Dashboard
+- Visão geral com KPIs, gráfico de atividade, funil de conversão
+- Detalhes de pedidos com drawer animado
+- Exportar relatório em PDF (`/dashboard/relatorio`)
+- Gerenciamento de produtos (CRUD, upload de imagem, paginação, filtros)
+- Gerenciamento de categorias e banners (com vinculação a categorias)
+- Campanhas com geração de links UTM e tracking de cliques
+- Lista de clientes paginada com busca
+- Configurações da loja (cor primária, WhatsApp, horários)
 
-1. **Cliente** solicita assinatura em `/api/upload/sign` (requer autenticação)
-2. **Server** valida autenticação + tipo de arquivo e gera `signature` com `CLOUDINARY_API_SECRET`
-3. **Cliente** envia o arquivo diretamente ao Cloudinary usando a assinatura
-4. **Cloudinary** retorna `url` e `public_id`
-5. **Cliente** persiste apenas a URL e o public_id no MongoDB via API
+---
 
-`CLOUDINARY_API_SECRET` nunca trafega para o cliente.
+## Autenticação
 
-## Segurança
+O sistema usa dois tokens:
 
-- JWT 15min + Refresh Token 7d (rotativo, HttpOnly cookie)
-- Rate limiting por IP/usuário via Upstash Ratelimit:
-  - Auth: 5 req/min
-  - Busca: 30 req/min
-  - Tracking: 60 req/min
-  - Dashboard: 100 req/min
-- Bloqueio automático após 5 tentativas de login (15 min)
-- RBAC server-side (owner, manager, viewer, customer)
-- Sanitização HTML via DOMPurify (server-side)
-- Validação de inputs via Zod em todos os endpoints
-- LGPD: `DELETE /api/user/me` anonimiza dados pessoais
+| Token | Validade | Armazenamento |
+|-------|----------|---------------|
+| `access_token` | 2 horas | Cookie HttpOnly + memória |
+| `refresh_token` | 7 dias | Cookie HttpOnly |
 
-## Sincronização com API Externa
+Refresh silencioso é feito automaticamente no header e na página de perfil. Roles disponíveis: `customer`, `owner`, `manager`, `viewer`.
 
-Configure as variáveis `EXTERNAL_INVENTORY_API_URL` e `EXTERNAL_INVENTORY_API_KEY`.
+---
 
-Disparo:
-- Manual via Dashboard > Configurações > Sincronizar Agora
-- Via `POST /api/sync/inventory` (autenticado, role: owner)
+## Upload de imagens
 
-O serviço aplica upsert inteligente (cria, atualiza, desativa) com backoff exponencial e log detalhado em `/lib/db/models/sync-log.ts`.
+O upload é feito **diretamente para o Cloudinary** sem passar pelo servidor Next.js:
 
-## Deploy
+1. Frontend solicita assinatura: `POST /api/upload/sign`
+2. Frontend envia o arquivo para `https://api.cloudinary.com/v1_1/{cloud}/image/upload`
+3. Frontend usa `secure_url` e `public_id` retornados
 
-### Vercel (recomendado)
+Contextos e dimensões recomendadas:
+
+| Contexto | Dimensão recomendada |
+|----------|---------------------|
+| `product` | 800 × 800 px |
+| `banner` | 1200 × 400 px |
+| `logo` | 400 × 120 px |
+
+Ao substituir ou remover uma imagem via PATCH, o asset antigo é deletado automaticamente do Cloudinary.
+
+---
+
+## Analytics
+
+Eventos registrados via `POST /api/analytics/events`:
+
+| Tipo | Disparado quando |
+|------|-----------------|
+| `view` | Página do produto é visitada |
+| `add_to_cart` | Produto adicionado ao carrinho |
+| `remove_from_cart` | Produto removido do carrinho |
+| `checkout_initiated` | Usuário clica em "Finalizar compra" |
+
+Os dados alimentam os gráficos de atividade, o funil de conversão e os rankings de produtos no dashboard.
+
+---
+
+## Integração com sistema externo (Postgres)
+
+Para sincronizar produtos/estoque de um banco Postgres externo:
 
 ```bash
-vercel deploy
+npm install pg drizzle-orm
 ```
 
-Configure todas as variáveis de ambiente na dashboard da Vercel.
+Use `POST /api/sync/inventory` com o payload de produtos. A rota faz upsert no MongoDB mantendo imagens e dados adicionais já cadastrados.
 
-### Checklist pré-deploy
+Detalhes: [docs/API.md#sincronização-de-estoque](docs/API.md#sincronização-de-estoque)
 
-- [ ] `NODE_ENV=production`
-- [ ] HTTPS configurado
-- [ ] Variáveis de ambiente sem `NEXT_PUBLIC_` para secrets
-- [ ] MongoDB Atlas com IP whitelist
-- [ ] Cloudinary signed upload preset
-- [ ] Redis Upstash configurado
+---
+
+## Documentação da API
+
+Referência completa em [`docs/API.md`](docs/API.md).
+
+---
 
 ## Scripts
 
-```bash
-npm run dev        # Servidor de desenvolvimento
-npm run build      # Build de produção
-npm run start      # Iniciar build de produção
-npm run seed       # Popular banco com dados de exemplo
-npm run typecheck  # Verificar tipos TypeScript
-npm run lint       # ESLint
-```
+| Comando | Descrição |
+|---------|-----------|
+| `npm run dev` | Servidor de desenvolvimento (Turbopack) |
+| `npm run build` | Build de produção |
+| `npm start` | Inicia em produção |
+| `npm run seed` | Popula banco com dados de exemplo |
+| `npx tsx scripts/set-admin-cpf.ts` | Atribui CPF ao admin existente |
+
+---
+
+## Variáveis de ambiente — referência completa
+
+| Variável | Obrigatória | Descrição |
+|----------|-------------|-----------|
+| `NEXT_PUBLIC_APP_URL` | Sim | URL pública da aplicação |
+| `MONGODB_URI` | Sim | String de conexão MongoDB |
+| `JWT_SECRET` | Sim | Secret do access token |
+| `JWT_REFRESH_SECRET` | Sim | Secret do refresh token |
+| `CLOUDINARY_CLOUD_NAME` | Sim | Cloud name do Cloudinary |
+| `CLOUDINARY_API_KEY` | Sim | API Key do Cloudinary |
+| `CLOUDINARY_API_SECRET` | Sim | API Secret do Cloudinary |
+| `DEFAULT_STORE_ID` | Sim | ObjectId da loja no MongoDB |
+| `UPSTASH_REDIS_REST_URL` | Não | URL REST do Upstash (rate limiting) |
+| `UPSTASH_REDIS_REST_TOKEN` | Não | Token do Upstash |
