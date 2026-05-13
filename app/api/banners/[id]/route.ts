@@ -9,14 +9,16 @@ import { ok, badRequest, notFound, unauthorized, forbidden, internalError } from
 type Params = { params: Promise<{ id: string }> }
 
 const UpdateSchema = z.object({
-  title:          z.string().min(1).max(200).trim().optional(),
-  imageUrl:       z.string().url().optional(),
-  imagePublicId:  z.string().optional(),
-  linkUrl:        z.union([z.string().url(), z.string().startsWith('/'), z.literal('')]).optional(),
-  isActive:       z.boolean().optional(),
-  order:          z.number().int().optional(),
-  startDate:      z.string().optional(),
-  endDate:        z.string().optional(),
+  title:               z.string().min(1).max(200).trim().optional(),
+  imageUrl:            z.string().url().optional(),
+  imagePublicId:       z.string().optional(),
+  imageMobileUrl:      z.string().url().optional().or(z.literal('')),
+  imageMobilePublicId: z.string().optional(),
+  linkUrl:             z.union([z.string().url(), z.string().startsWith('/'), z.literal('')]).optional(),
+  isActive:            z.boolean().optional(),
+  order:               z.number().int().optional(),
+  startDate:           z.string().optional(),
+  endDate:             z.string().optional(),
 })
 
 export async function PATCH(req: NextRequest, { params }: Params) {
@@ -41,10 +43,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const current = await Banner.findOne({ _id: id, storeId })
     if (!current) return notFound('Banner não encontrado')
 
-    const incomingPublicId = parsed.data.imagePublicId
-    const oldPublicId      = current.imagePublicId as string | undefined
+    const incomingPublicId       = parsed.data.imagePublicId
+    const oldPublicId            = current.imagePublicId as string | undefined
+    const incomingMobilePublicId = parsed.data.imageMobilePublicId
+    const oldMobilePublicId      = current.imageMobilePublicId as string | undefined
 
-    // Se veio um novo publicId diferente do atual, deleta o antigo do Cloudinary
     if (
       oldPublicId &&
       incomingPublicId !== undefined &&
@@ -52,6 +55,15 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       !oldPublicId.startsWith('external_')
     ) {
       try { await destroyCloudinaryAsset(oldPublicId) } catch { /* silencioso */ }
+    }
+
+    if (
+      oldMobilePublicId &&
+      incomingMobilePublicId !== undefined &&
+      incomingMobilePublicId !== oldMobilePublicId &&
+      !oldMobilePublicId.startsWith('external_')
+    ) {
+      try { await destroyCloudinaryAsset(oldMobilePublicId) } catch { /* silencioso */ }
     }
 
     const banner = await Banner.findOneAndUpdate(
@@ -81,10 +93,13 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     const banner = await Banner.findOne({ _id: id, storeId })
     if (!banner) return notFound('Banner não encontrado')
 
-    if (banner.imagePublicId && !banner.imagePublicId.startsWith('banners/manual_') && !banner.imagePublicId.startsWith('external_')) {
-      try {
-        await destroyCloudinaryAsset(banner.imagePublicId)
-      } catch { /* log silencioso */ }
+    const isManual = (id: string) => id.startsWith('banners/manual_') || id.startsWith('external_')
+
+    if (banner.imagePublicId && !isManual(banner.imagePublicId)) {
+      try { await destroyCloudinaryAsset(banner.imagePublicId) } catch { /* silencioso */ }
+    }
+    if (banner.imageMobilePublicId && !isManual(banner.imageMobilePublicId)) {
+      try { await destroyCloudinaryAsset(banner.imageMobilePublicId) } catch { /* silencioso */ }
     }
 
     await Banner.findOneAndDelete({ _id: id, storeId })

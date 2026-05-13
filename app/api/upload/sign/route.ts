@@ -4,10 +4,10 @@ import { generateUploadSignature, type UploadContext } from '@/lib/cloudinary/si
 import { requireAuth, requireDashboardAccess } from '@/lib/api/auth-guard'
 import { ok, badRequest, unauthorized, forbidden, internalError } from '@/lib/api/response'
 
-const ALLOWED_CONTEXTS: UploadContext[] = ['product', 'banner', 'logo']
+const ALLOWED_CONTEXTS: UploadContext[] = ['product', 'banner', 'banner_mobile', 'logo']
 
 const SignSchema = z.object({
-  context: z.enum(['product', 'banner', 'logo']),
+  context: z.enum(['product', 'banner', 'banner_mobile', 'logo']),
   fileType: z.string().refine(
     (v) => ['image/jpeg', 'image/png', 'image/webp'].includes(v),
     { message: 'Tipo de arquivo não permitido (use JPEG, PNG ou WebP)' }

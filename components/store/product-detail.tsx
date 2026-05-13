@@ -202,13 +202,13 @@ export function ProductDetail({ product, related }: ProductDetailProps) {
               {/* Qty */}
               <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 px-1 py-1">
                 <button onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="w-7 h-7 flex items-center justify-center text-gray-500 active:scale-95 transition-all">
-                  <Minus className="w-3 h-3" />
+                  className="w-9 h-9 flex items-center justify-center text-gray-500 active:scale-95 transition-all">
+                  <Minus className="w-3.5 h-3.5" />
                 </button>
                 <span className="w-6 text-center text-sm font-bold tabular-nums">{quantity}</span>
                 <button onClick={() => setQuantity((q) => Math.min(99, q + 1))}
-                  className="w-7 h-7 flex items-center justify-center text-gray-500 active:scale-95 transition-all">
-                  <Plus className="w-3 h-3" />
+                  className="w-9 h-9 flex items-center justify-center text-gray-500 active:scale-95 transition-all">
+                  <Plus className="w-3.5 h-3.5" />
                 </button>
               </div>
 

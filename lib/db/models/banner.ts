@@ -5,6 +5,8 @@ export interface BannerDocument extends Document {
   title: string
   imageUrl: string
   imagePublicId: string
+  imageMobileUrl?: string
+  imageMobilePublicId?: string
   linkUrl?: string
   startDate: Date
   endDate: Date
@@ -20,6 +22,8 @@ const BannerSchema = new Schema<BannerDocument>(
     title: { type: String, required: true, trim: true },
     imageUrl: { type: String, required: true },
     imagePublicId: { type: String, required: true },
+    imageMobileUrl: { type: String },
+    imageMobilePublicId: { type: String },
     linkUrl: { type: String },
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },

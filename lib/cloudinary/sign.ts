@@ -8,7 +8,14 @@ if (!CLOUDINARY_API_SECRET || !CLOUDINARY_API_KEY || !CLOUDINARY_CLOUD_NAME) {
   // Não lançar erro aqui — apenas no momento de uso, para não quebrar builds
 }
 
-export type UploadContext = 'product' | 'banner' | 'logo'
+export type UploadContext = 'product' | 'banner' | 'banner_mobile' | 'logo'
+
+const CONTEXT_FOLDER: Record<UploadContext, string> = {
+  product:       'selmapel/products',
+  banner:        'selmapel/banners',
+  banner_mobile: 'selmapel/banners/mobile',
+  logo:          'selmapel/logos',
+}
 
 interface SignatureResult {
   signature: string
@@ -27,7 +34,7 @@ export function generateUploadSignature(
   }
 
   const timestamp = Math.round(Date.now() / 1000)
-  const folder = `selmapel/${context}s`
+  const folder = CONTEXT_FOLDER[context]
 
   const params: Record<string, string | number> = {
     folder,

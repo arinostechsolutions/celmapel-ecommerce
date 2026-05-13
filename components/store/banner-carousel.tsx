@@ -4,13 +4,13 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Banner {
   _id: string
   title: string
   imageUrl: string
+  imageMobileUrl?: string
   linkUrl?: string
 }
 
@@ -62,7 +62,7 @@ export function BannerCarousel({ banners }: BannerCarouselProps) {
 
   return (
     <div
-      className="relative overflow-hidden rounded-2xl bg-gray-900 aspect-[16/6] md:aspect-[16/5] select-none cursor-grab active:cursor-grabbing"
+      className="relative overflow-hidden rounded-2xl bg-gray-900 aspect-square md:aspect-[16/5] select-none cursor-grab active:cursor-grabbing"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onPointerDown={handlePointerDown}
@@ -86,44 +86,39 @@ export function BannerCarousel({ banners }: BannerCarouselProps) {
             transition={{ duration: INTERVAL_MS / 1000, ease: 'linear' }}
             className="absolute inset-0 origin-center"
           >
+            {/* Desktop image */}
             <Image
               src={banner.imageUrl}
               alt={banner.title}
               fill
-              className="object-cover"
+              className={cn('object-cover', banner.imageMobileUrl ? 'hidden md:block' : 'block')}
               priority
               sizes="(max-width: 768px) 100vw, (max-width: 1280px) 90vw, 1280px"
               draggable={false}
             />
+            {/* Mobile image (only rendered if provided) */}
+            {banner.imageMobileUrl && (
+              <Image
+                src={banner.imageMobileUrl}
+                alt={banner.title}
+                fill
+                className="object-cover block md:hidden"
+                priority
+                sizes="100vw"
+                draggable={false}
+              />
+            )}
           </motion.div>
 
-          {/* Gradients */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-
-          {/* Text */}
-          <div className="absolute inset-0 flex items-end md:items-center p-5 md:p-10">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2, ease: 'easeOut' }}
-              className="space-y-3 max-w-lg"
-            >
-              <h2 className="text-white font-bold text-xl md:text-3xl lg:text-4xl leading-tight drop-shadow-lg">
-                {banner.title}
-              </h2>
-              {banner.linkUrl && (
-                <Link
-                  href={banner.linkUrl}
-                  onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-gray-900 text-sm font-semibold shadow-lg hover:bg-gray-50 active:scale-95 transition-all duration-150"
-                >
-                  Ver oferta
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </Link>
-              )}
-            </motion.div>
-          </div>
+          {/* Clicável — redireciona para o link do banner */}
+          {banner.linkUrl && (
+            <Link
+              href={banner.linkUrl}
+              className="absolute inset-0 z-10"
+              aria-label={banner.title}
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
         </motion.div>
       </AnimatePresence>
 

@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, Eye, EyeOff, Link2, Tag, ExternalLink, Pencil, X, Check } from 'lucide-react'
+import { Plus, Trash2, Eye, EyeOff, Link2, Tag, ExternalLink, Pencil, X, Check, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -16,6 +16,8 @@ interface Banner {
   title: string
   imageUrl: string
   imagePublicId?: string
+  imageMobileUrl?: string
+  imageMobilePublicId?: string
   linkUrl?: string
   isActive: boolean
   startDate: Date | string
@@ -33,7 +35,9 @@ interface BannersManagerProps {
 type LinkMode = 'none' | 'category' | 'custom'
 
 const EMPTY_FORM = {
-  title: '', imageUrl: '', imagePublicId: '', linkUrl: '', startDate: '', endDate: '',
+  title: '', imageUrl: '', imagePublicId: '',
+  imageMobileUrl: '', imageMobilePublicId: '',
+  linkUrl: '', startDate: '', endDate: '',
 }
 
 function resolveLinkMode(linkUrl?: string): LinkMode {
@@ -156,12 +160,14 @@ export function BannersManager({ banners, categories }: BannersManagerProps) {
     const mode = resolveLinkMode(banner.linkUrl)
     setEditingId(id)
     setEditForm({
-      title:         banner.title,
-      imageUrl:      banner.imageUrl,
-      imagePublicId: banner.imagePublicId ?? '',
-      linkUrl:       banner.linkUrl ?? '',
-      startDate:     banner.startDate ? String(banner.startDate).slice(0, 10) : '',
-      endDate:       banner.endDate   ? String(banner.endDate).slice(0, 10)   : '',
+      title:                banner.title,
+      imageUrl:             banner.imageUrl,
+      imagePublicId:        banner.imagePublicId ?? '',
+      imageMobileUrl:       banner.imageMobileUrl ?? '',
+      imageMobilePublicId:  banner.imageMobilePublicId ?? '',
+      linkUrl:              banner.linkUrl ?? '',
+      startDate:            banner.startDate ? String(banner.startDate).slice(0, 10) : '',
+      endDate:              banner.endDate   ? String(banner.endDate).slice(0, 10)   : '',
     })
     setEditLinkMode(mode)
     setEditSelectedCategory(extractCategoryId(banner.linkUrl))
@@ -245,9 +251,29 @@ export function BannersManager({ banners, categories }: BannersManagerProps) {
           <Input label="Título do banner" placeholder="Ex: Promoção de Páscoa — até 40% off"
             value={createForm.title} onChange={(e) => setCreateForm((f) => ({ ...f, title: e.target.value }))} />
 
-          <ImageUploader context="banner" value={createForm.imageUrl || undefined}
-            onChange={({ url, publicId }) => setCreateForm((f) => ({ ...f, imageUrl: url, imagePublicId: publicId }))}
-            onRemove={() => setCreateForm((f) => ({ ...f, imageUrl: '', imagePublicId: '' }))} />
+          {/* Aviso de dimensões */}
+          <div className="flex gap-2.5 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-xs text-blue-700">
+            <Info className="w-4 h-4 shrink-0 mt-0.5 text-blue-400" />
+            <div className="space-y-0.5">
+              <p className="font-semibold">Use imagens diferentes para cada tela</p>
+              <p>
+                <span className="font-medium">Desktop:</span> proporção 3:1 — recomendado <strong>1200 × 400 px</strong> (paisagem). Exibida em computadores e tablets.
+              </p>
+              <p>
+                <span className="font-medium">Mobile:</span> proporção 1:1 — recomendado <strong>600 × 600 px</strong> (quadrado). Exibida em smartphones.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ImageUploader context="banner" value={createForm.imageUrl || undefined}
+              onChange={({ url, publicId }) => setCreateForm((f) => ({ ...f, imageUrl: url, imagePublicId: publicId }))}
+              onRemove={() => setCreateForm((f) => ({ ...f, imageUrl: '', imagePublicId: '' }))} />
+
+            <ImageUploader context="banner_mobile" value={createForm.imageMobileUrl || undefined}
+              onChange={({ url, publicId }) => setCreateForm((f) => ({ ...f, imageMobileUrl: url, imageMobilePublicId: publicId }))}
+              onRemove={() => setCreateForm((f) => ({ ...f, imageMobileUrl: '', imageMobilePublicId: '' }))} />
+          </div>
 
           <LinkSelector
             linkMode={createLinkMode}   setLinkMode={setCreateLinkMode}
@@ -337,9 +363,25 @@ export function BannersManager({ banners, categories }: BannersManagerProps) {
                   <Input label="Título" value={editForm.title}
                     onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))} />
 
-                  <ImageUploader context="banner" value={editForm.imageUrl || undefined}
-                    onChange={({ url, publicId }) => setEditForm((f) => ({ ...f, imageUrl: url, imagePublicId: publicId }))}
-                    onRemove={() => setEditForm((f) => ({ ...f, imageUrl: '', imagePublicId: '' }))} />
+                  {/* Aviso de dimensões */}
+                  <div className="flex gap-2.5 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-xs text-blue-700">
+                    <Info className="w-4 h-4 shrink-0 mt-0.5 text-blue-400" />
+                    <div className="space-y-0.5">
+                      <p className="font-semibold">Use imagens diferentes para cada tela</p>
+                      <p><span className="font-medium">Desktop:</span> <strong>1200 × 400 px</strong> (proporção 3:1 — paisagem)</p>
+                      <p><span className="font-medium">Mobile:</span> <strong>600 × 600 px</strong> (proporção 1:1 — quadrado)</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <ImageUploader context="banner" value={editForm.imageUrl || undefined}
+                      onChange={({ url, publicId }) => setEditForm((f) => ({ ...f, imageUrl: url, imagePublicId: publicId }))}
+                      onRemove={() => setEditForm((f) => ({ ...f, imageUrl: '', imagePublicId: '' }))} />
+
+                    <ImageUploader context="banner_mobile" value={editForm.imageMobileUrl || undefined}
+                      onChange={({ url, publicId }) => setEditForm((f) => ({ ...f, imageMobileUrl: url, imageMobilePublicId: publicId }))}
+                      onRemove={() => setEditForm((f) => ({ ...f, imageMobileUrl: '', imageMobilePublicId: '' }))} />
+                  </div>
 
                   <LinkSelector
                     linkMode={editLinkMode}       setLinkMode={setEditLinkMode}

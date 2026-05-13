@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { Upload, X, Loader2, ImageIcon, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export type UploadContext = 'product' | 'banner' | 'logo'
+export type UploadContext = 'product' | 'banner' | 'banner_mobile' | 'logo'
 
 interface UploadResult {
   url: string
@@ -23,10 +23,16 @@ interface ImageUploaderProps {
 
 const CONTEXT_META: Record<UploadContext, { label: string; dimensions: string; aspectRatio: string; hint: string }> = {
   banner: {
-    label: 'Banner',
+    label: 'Banner — Desktop',
     dimensions: '1200 × 400 px',
     aspectRatio: '3/1',
-    hint: 'Imagem panorâmica para o slider da loja. Recomendado: 1200 × 400 px (JPG, PNG ou WebP, máx. 5 MB)',
+    hint: 'Proporcao 3:1 (paisagem). Exibida em telas grandes. Recomendado: 1200 × 400 px. JPG, PNG ou WebP, max 5 MB.',
+  },
+  banner_mobile: {
+    label: 'Banner — Mobile',
+    dimensions: '600 × 600 px',
+    aspectRatio: '1/1',
+    hint: 'Proporcao 1:1 (quadrado). Exibida em smartphones. Recomendado: 600 × 600 px. JPG, PNG ou WebP, max 5 MB.',
   },
   product: {
     label: 'Foto do produto',

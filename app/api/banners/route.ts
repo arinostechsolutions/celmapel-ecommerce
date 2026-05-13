@@ -6,13 +6,15 @@ import { requireAuth, requireDashboardAccess } from '@/lib/api/auth-guard'
 import { ok, badRequest, unauthorized, forbidden, internalError } from '@/lib/api/response'
 
 const CreateBannerSchema = z.object({
-  title: z.string().min(1).max(200).trim(),
-  imageUrl: z.string().url(),
-  imagePublicId: z.string().min(1),
-  linkUrl: z.union([z.string().url(), z.string().startsWith('/'), z.literal('')]).optional(),
-  startDate: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
-  endDate: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
-  order: z.number().int().min(0).optional().default(0),
+  title:               z.string().min(1).max(200).trim(),
+  imageUrl:            z.string().url(),
+  imagePublicId:       z.string().min(1),
+  imageMobileUrl:      z.string().url().optional().or(z.literal('')),
+  imageMobilePublicId: z.string().optional(),
+  linkUrl:             z.union([z.string().url(), z.string().startsWith('/'), z.literal('')]).optional(),
+  startDate:           z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
+  endDate:             z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
+  order:               z.number().int().min(0).optional().default(0),
 })
 
 export async function GET(req: NextRequest) {
