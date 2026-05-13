@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { ShoppingCart, ChevronLeft, ChevronRight, Minus, Plus, Share2, Check } from 'lucide-react'
 import { LightboxTrigger } from '@/components/ui/image-lightbox'
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { ProductCard } from './product-card'
 import { ProductsSection } from './products-section'
 import { useCart } from '@/hooks/use-cart'
+import { useTrack } from '@/hooks/use-track'
 import { formatCurrency, getDiscountPercent } from '@/lib/utils'
 
 interface Product {
@@ -36,6 +37,13 @@ export function ProductDetail({ product, related }: ProductDetailProps) {
   const [added, setAdded] = useState(false)
   const [shared, setShared] = useState(false)
   const { addItem } = useCart()
+  const { track } = useTrack()
+
+  // Registra visualização uma única vez ao montar
+  useEffect(() => {
+    track('view', product._id)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product._id])
 
   const hasPromo = product.promoPrice && product.promoPrice > 0 && product.promoPrice < product.price
   const displayPrice = hasPromo ? product.promoPrice! : product.price
@@ -53,6 +61,7 @@ export function ProductDetail({ product, related }: ProductDetailProps) {
       imageUrl: images[0]?.url,
       selectedVariations,
     })
+    track('add_to_cart', product._id)
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
   }

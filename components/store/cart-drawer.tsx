@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { X, MessageCircle, ArrowLeft, Package } from 'lucide-react'
 import { useState } from 'react'
 import { useCart, useCartTotals } from '@/hooks/use-cart'
+import { useTrack } from '@/hooks/use-track'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
 import { cn } from '@/lib/utils'
@@ -20,6 +21,7 @@ export function CartDrawer() {
   } = useCart()
   const { subtotal, total } = useCartTotals()
 
+  const { track } = useTrack()
   const [isOrdering, setIsOrdering] = useState(false)
   const [orderError, setOrderError] = useState('')
 
@@ -51,6 +53,8 @@ export function CartDrawer() {
       })
       const data = await res.json()
       if (data.data?.whatsappUrl) {
+        // Registra checkout_initiated para cada produto no carrinho
+        items.forEach((item) => track('checkout_initiated', item.productId))
         clearCart()
         closeCheckout()
         window.open(data.data.whatsappUrl, '_blank', 'noopener,noreferrer')

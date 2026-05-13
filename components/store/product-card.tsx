@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Plus, Minus } from 'lucide-react'
 import { cn, formatCurrency, getDiscountPercent } from '@/lib/utils'
 import { useCart } from '@/hooks/use-cart'
+import { useTrack } from '@/hooks/use-track'
 import { LightboxTrigger } from '@/components/ui/image-lightbox'
 
 interface ProductCardProps {
@@ -24,6 +25,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product, className }: ProductCardProps) {
   const { addItem, items, updateQuantity } = useCart()
+  const { track } = useTrack()
 
   const hasPromo     = product.promoPrice && product.promoPrice > 0 && product.promoPrice < product.price
   const displayPrice = hasPromo ? product.promoPrice! : product.price
@@ -36,6 +38,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation()
     addItem({ productId: product._id, name: product.name, price: displayPrice, quantity: 1, imageUrl })
+    track('add_to_cart', product._id)
   }
   const handleInc = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation()
