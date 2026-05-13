@@ -1,5 +1,9 @@
 import Link from 'next/link'
-import Image from 'next/image'
+
+// Evita prerender estático: páginas client (useForm/useSearchParams) falham
+// no prerender do Railway. Forçar dinâmico garante que todas as rotas
+// (auth/login, auth/cadastro) sejam renderizadas server-side em runtime.
+export const dynamic = 'force-dynamic'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
