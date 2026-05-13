@@ -1,8 +1,10 @@
-'use client'
-import dynamic from 'next/dynamic'
-
-const RegisterForm = dynamic(() => import('./register-form'), { ssr: false })
+import { NoSSR } from '@/components/ui/no-ssr'
+import RegisterForm from './register-form'
 
 export default function RegisterPage() {
-  return <RegisterForm />
+  return (
+    <NoSSR>
+      <RegisterForm />
+    </NoSSR>
+  )
 }
