@@ -78,16 +78,17 @@ async function getDashboardData(): Promise<DashboardData> {
       Event.countDocuments({ storeId: rawId, type: 'view',               createdAt: { $gte: monthAgo } }),
       Event.countDocuments({ storeId: rawId, type: 'add_to_cart',        createdAt: { $gte: monthAgo } }),
       Event.countDocuments({ storeId: rawId, type: 'checkout_initiated', createdAt: { $gte: monthAgo } }),
-      Campaign.countDocuments({ storeId: rawId, isActive: true }),
+      // countDocuments aceita string ou ObjectId — testa os dois para robustez
+      Campaign.countDocuments({ $or: [{ storeId: rawId }, { storeId: storeOid }], isActive: true }),
 
-      // Total de cliques em campanhas
+      // Total de cliques — aggregate precisa de ObjectId no $match
       Campaign.aggregate([
-        { $match: { storeId: rawId } },
+        { $match: { $or: [{ storeId: rawId }, { storeId: storeOid }] } },
         { $group: { _id: null, total: { $sum: '$clickCount' } } },
       ]),
 
       // Top 5 campanhas por cliques
-      Campaign.find({ storeId: rawId })
+      Campaign.find({ $or: [{ storeId: rawId }, { storeId: storeOid }] })
         .sort({ clickCount: -1 })
         .limit(5)
         .select('name clickCount')

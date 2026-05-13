@@ -25,10 +25,18 @@ export async function POST(req: NextRequest) {
     // storeId é ObjectId no schema — precisa converter para o $match funcionar
     const storeOid = new mongoose.Types.ObjectId(rawStoreId)
 
-    await Campaign.findOneAndUpdate(
-      { storeId: storeOid, utmCampaign: parsed.data.utmCampaign },
+    const result = await Campaign.findOneAndUpdate(
+      {
+        $or: [{ storeId: rawStoreId }, { storeId: storeOid }],
+        utmCampaign: parsed.data.utmCampaign,
+      },
       { $inc: { clickCount: 1 } }
     )
+
+    if (!result) {
+      // Nenhuma campanha encontrada — retorna ok para não expor info interna
+      return ok({ tracked: false, reason: 'campaign_not_found' })
+    }
 
     return ok({ tracked: true })
   } catch (err) {

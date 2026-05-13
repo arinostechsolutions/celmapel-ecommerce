@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 
-const DEBOUNCE_MS = 60 * 60 * 1000 // 1 hora
+const DEBOUNCE_MS = 10 * 60 * 1000 // 10 minutos
 
 export function UtmTracker() {
   const searchParams = useSearchParams()
