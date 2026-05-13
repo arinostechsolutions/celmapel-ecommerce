@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { Eye, ShoppingCart, MessageCircle, TrendingUp, Megaphone, MousePointerClick, FileBarChart2 } from 'lucide-react'
 import Link from 'next/link'
+import { AutoRefresh }       from '@/components/dashboard/auto-refresh'
 import { MetricCard }        from '@/components/dashboard/metric-card'
 import { ActivityChart }     from '@/components/dashboard/activity-chart'
 import { ConversionFunnel }  from '@/components/dashboard/conversion-funnel'
@@ -182,7 +183,10 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Visão Geral</h1>
-          <p className="text-sm text-gray-500">Últimos 30 dias</p>
+          <div className="flex items-center gap-3 mt-0.5">
+            <p className="text-sm text-gray-500">Últimos 30 dias</p>
+            <AutoRefresh intervalSecs={30} />
+          </div>
         </div>
         <Link
           href="/dashboard/relatorio"
