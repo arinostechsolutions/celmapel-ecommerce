@@ -33,6 +33,11 @@ export interface ProductDocument extends Document {
   cartCount: number
   orderCount: number
   externalId?: string
+  stock: number
+  isBestSeller: boolean
+  bestSellerRank?: number
+  weeklyUnitsSold?: number
+  bestSellerSyncedAt?: Date
   createdAt: Date
   updatedAt: Date
 }
@@ -81,7 +86,12 @@ const ProductSchema = new Schema<ProductDocument>(
     viewCount: { type: Number, default: 0 },
     cartCount: { type: Number, default: 0 },
     orderCount: { type: Number, default: 0 },
-    externalId: { type: String, index: true },
+    externalId:          { type: String, index: true },
+    stock:               { type: Number, default: 0 },
+    isBestSeller:        { type: Boolean, default: false, index: true },
+    bestSellerRank:      { type: Number },
+    weeklyUnitsSold:     { type: Number },
+    bestSellerSyncedAt:  { type: Date },
   },
   { timestamps: true }
 )

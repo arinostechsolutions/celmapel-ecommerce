@@ -1,13 +1,26 @@
 'use client'
 
 import Image from 'next/image'
-import { X, MessageCircle, ArrowLeft, Package } from 'lucide-react'
-import { useState } from 'react'
+import { X, MessageCircle, ArrowLeft, Package, Truck, Store, CreditCard } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { useCart, useCartTotals } from '@/hooks/use-cart'
 import { useTrack } from '@/hooks/use-track'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+
+interface StorePublicSettings {
+  deliveryEnabled: boolean
+  pickupEnabled: boolean
+  minDeliveryValue: number
+  paymentMethods: string[]
+}
+
+const PAYMENT_LABELS: Record<string, string> = {
+  pix: 'PIX',
+  debit: 'Débito',
+  credit: 'Crédito',
+}
 
 /**
  * Drawer de confirmação de pedido — abre após "Finalizar pedido" no MiniCart.
@@ -24,6 +37,32 @@ export function CartDrawer() {
   const { track } = useTrack()
   const [isOrdering, setIsOrdering] = useState(false)
   const [orderError, setOrderError] = useState('')
+  const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup'>('delivery')
+  const [paymentMethod, setPaymentMethod] = useState<string>('')
+  const [storeSettings, setStoreSettings] = useState<StorePublicSettings>({
+    deliveryEnabled: true,
+    pickupEnabled: true,
+    minDeliveryValue: 0,
+    paymentMethods: ['pix', 'debit', 'credit'],
+  })
+
+  useEffect(() => {
+    fetch('/api/store')
+      .then((r) => r.json())
+      .then((json) => {
+        const s = json?.data
+        if (!s) return
+        setStoreSettings({
+          deliveryEnabled: s.deliveryEnabled ?? true,
+          pickupEnabled: s.pickupEnabled ?? true,
+          minDeliveryValue: s.minDeliveryValue ?? 0,
+          paymentMethods: s.paymentMethods ?? ['pix', 'debit', 'credit'],
+        })
+        if (!s.deliveryEnabled && s.pickupEnabled) setDeliveryType('pickup')
+        if (s.paymentMethods?.length) setPaymentMethod(s.paymentMethods[0])
+      })
+      .catch(() => {})
+  }, [])
 
   const onClose = () => closeCheckout()
   const onBack = () => { closeCheckout(); openMiniCart() }
@@ -43,21 +82,29 @@ export function CartDrawer() {
             price:     i.price,
             quantity:  i.quantity,
             imageUrl:  i.imageUrl,
+            sku:       i.sku,
           })),
           discountAmount,
-          couponCode: couponCode || undefined,
-          utmSource:   utmParams.utm_source,
-          utmMedium:   utmParams.utm_medium,
-          utmCampaign: utmParams.utm_campaign,
+          couponCode:    couponCode || undefined,
+          deliveryType:  deliveryType,
+          paymentMethod: paymentMethod || undefined,
+          utmSource:     utmParams.utm_source,
+          utmMedium:     utmParams.utm_medium,
+          utmCampaign:   utmParams.utm_campaign,
         }),
       })
       const data = await res.json()
       if (data.data?.whatsappUrl) {
-        // Registra checkout_initiated para cada produto no carrinho
         items.forEach((item) => track('checkout_initiated', item.productId))
         clearCart()
         closeCheckout()
-        window.open(data.data.whatsappUrl, '_blank', 'noopener,noreferrer')
+        const a = document.createElement('a')
+        a.href = data.data.whatsappUrl
+        a.target = '_blank'
+        a.rel = 'noopener noreferrer'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
       } else {
         setOrderError(data.error?.message ?? 'Erro ao gerar pedido. Tente novamente.')
       }
@@ -69,6 +116,10 @@ export function CartDrawer() {
   }
 
   const totalQty = items.reduce((s, i) => s + i.quantity, 0)
+  const belowMinDelivery =
+    deliveryType === 'delivery' &&
+    storeSettings.minDeliveryValue > 0 &&
+    total < storeSettings.minDeliveryValue
 
   return (
     <>
@@ -165,6 +216,62 @@ export function CartDrawer() {
             </div>
           </div>
 
+          {/* Entrega / Retirada */}
+          {(storeSettings.deliveryEnabled && storeSettings.pickupEnabled) && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Como receber?</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: 'delivery', label: 'Entrega', Icon: Truck },
+                  { value: 'pickup',   label: 'Retirada', Icon: Store },
+                ].map(({ value, label, Icon }) => (
+                  <button
+                    key={value}
+                    onClick={() => setDeliveryType(value as 'delivery' | 'pickup')}
+                    className={cn(
+                      'flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-colors',
+                      deliveryType === value
+                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                    )}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {deliveryType === 'delivery' && storeSettings.minDeliveryValue > 0 && total < storeSettings.minDeliveryValue && (
+                <p className="text-xs text-amber-600 bg-amber-50 rounded-xl px-3 py-2">
+                  Pedido mínimo para entrega: {formatCurrency(storeSettings.minDeliveryValue)}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Forma de pagamento */}
+          {storeSettings.paymentMethods.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Forma de pagamento</p>
+              <div className="flex flex-wrap gap-2">
+                {storeSettings.paymentMethods.map((method) => (
+                  <button
+                    key={method}
+                    onClick={() => setPaymentMethod(method)}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-colors',
+                      paymentMethod === method
+                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                    )}
+                  >
+                    <CreditCard className="w-3.5 h-3.5" />
+                    {PAYMENT_LABELS[method] ?? method}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Info WhatsApp */}
           <div className="flex items-start gap-3 bg-green-50 border border-green-100 rounded-2xl p-4">
             <MessageCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
@@ -183,9 +290,10 @@ export function CartDrawer() {
             <p className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">{orderError}</p>
           )}
           <Button
-            className="w-full gap-2 h-12 text-sm font-semibold bg-green-600 hover:bg-green-700"
+            className="w-full gap-2 h-12 text-sm font-semibold bg-green-600 hover:bg-green-700 disabled:opacity-50"
             onClick={handleOrder}
             loading={isOrdering}
+            disabled={belowMinDelivery}
           >
             <MessageCircle className="w-5 h-5" />
             Finalizar compra pelo WhatsApp

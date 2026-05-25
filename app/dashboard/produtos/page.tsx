@@ -33,6 +33,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
     await connectDB()
     const [raw, count] = await Promise.all([
       Product.find(filter)
+        .select('name slug price promoPrice status showOnSite isBestSeller images categoryId createdAt')
         .populate('categoryId', 'name')
         .sort(q ? { score: { $meta: 'textScore' } } : { createdAt: -1 })
         .skip(skip)

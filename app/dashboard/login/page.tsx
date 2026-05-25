@@ -46,7 +46,7 @@ function DashboardLoginForm() {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cpf: data.cpf, password: data.password }),
+      body: JSON.stringify({ cpf: data.cpf, password: data.password, dashboard: true }),
     })
 
     const json = await res.json()
@@ -57,7 +57,7 @@ function DashboardLoginForm() {
     }
 
     const user = json.data?.user
-    if (!['owner', 'manager', 'viewer'].includes(user?.role)) {
+    if (!['master', 'owner', 'manager', 'viewer'].includes(user?.role)) {
       setServerError('Sem permissão de acesso ao dashboard')
       return
     }

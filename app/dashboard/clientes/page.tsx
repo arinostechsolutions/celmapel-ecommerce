@@ -4,8 +4,11 @@ import Link from 'next/link'
 import connectDB from '@/lib/db/mongoose'
 import User from '@/lib/db/models/user'
 import { formatDate } from '@/lib/utils'
-import { Users, UserCheck, UserX, ChevronLeft, ChevronRight } from 'lucide-react'
+import { UserCheck, UserX, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { PromoteUserButton } from '@/components/dashboard/promote-user-button'
+import { cookies } from 'next/headers'
+import { verifyAccessToken } from '@/lib/auth/jwt'
 
 const PAGE_SIZE = 20
 
@@ -19,16 +22,28 @@ export default async function CustomersPage({ searchParams }: PageProps) {
   const skip    = (page - 1) * PAGE_SIZE
   const search  = q?.trim() ?? ''
 
+  // Detecta se o usuário logado é master para exibir controles de promoção
+  const cookieStore = await cookies()
+  const token = cookieStore.get('access_token')?.value
+  let myRole = ''
+  try {
+    if (token) myRole = verifyAccessToken(token).role
+  } catch { /* ignora */ }
+  const canPromote = ['master', 'owner'].includes(myRole)
+
   let customers: {
     _id: unknown; name: string; email?: string; phone?: string;
-    cpf?: string; isBlocked?: boolean; createdAt: unknown
+    cpf?: string; isBlocked?: boolean; role?: string; createdAt: unknown
   }[] = []
   let total = 0
 
   try {
     await connectDB()
 
-    const filter: Record<string, unknown> = { role: 'customer', isDeleted: false }
+    const filter: Record<string, unknown> = {
+      role: { $in: ['customer', 'owner', 'manager', 'viewer'] },
+      isDeleted: false,
+    }
     if (search) {
       filter.$or = [
         { name:  { $regex: search, $options: 'i' } },
@@ -42,7 +57,7 @@ export default async function CustomersPage({ searchParams }: PageProps) {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(PAGE_SIZE)
-        .select('name email phone cpf isBlocked createdAt')
+        .select('name email phone cpf isBlocked role createdAt')
         .lean() as Promise<typeof customers>,
       User.countDocuments(filter),
     ])
@@ -62,7 +77,7 @@ export default async function CustomersPage({ searchParams }: PageProps) {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Clientes</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{total} cliente{total !== 1 ? 's' : ''} cadastrado{total !== 1 ? 's' : ''}</p>
+          <p className="text-sm text-gray-500 mt-0.5">{total} usuário{total !== 1 ? 's' : ''} cadastrado{total !== 1 ? 's' : ''}</p>
         </div>
 
         {/* Busca */}
@@ -93,6 +108,7 @@ export default async function CustomersPage({ searchParams }: PageProps) {
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Telefone</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Cadastro</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                {canPromote && <th className="px-4 py-3" />}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -131,6 +147,15 @@ export default async function CustomersPage({ searchParams }: PageProps) {
                       </Badge>
                     )}
                   </td>
+                  {canPromote && (
+                    <td className="px-4 py-3 text-right">
+                      <PromoteUserButton
+                        userId={String(c._id)}
+                        currentRole={c.role ?? 'customer'}
+                        myRole={myRole}
+                      />
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

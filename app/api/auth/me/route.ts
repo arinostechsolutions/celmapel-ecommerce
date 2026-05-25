@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
       cpf: user.cpf ? `***.***.${user.cpf.slice(6, 9)}-**` : undefined,
       phone: user.phone,
       role: user.role,
+      permissions: user.permissions ?? [],
     })
   } catch (err: unknown) {
     if (err instanceof Error && err.message === 'UNAUTHORIZED') return unauthorized()

@@ -6,7 +6,8 @@ export interface UserDocument extends Document {
   cpf?: string
   phone?: string
   passwordHash: string
-  role: 'customer' | 'owner' | 'manager' | 'viewer'
+  role: 'customer' | 'owner' | 'manager' | 'viewer' | 'master'
+  permissions: string[]
   storeId?: mongoose.Types.ObjectId
   isBlocked: boolean
   loginAttempts: number
@@ -39,9 +40,10 @@ const UserSchema = new Schema<UserDocument>(
     passwordHash: { type: String, required: true },
     role: {
       type: String,
-      enum: ['customer', 'owner', 'manager', 'viewer'],
+      enum: ['customer', 'owner', 'manager', 'viewer', 'master'],
       default: 'customer',
     },
+    permissions: { type: [String], default: [] },
     storeId: { type: Schema.Types.ObjectId, ref: 'Store', index: true },
     isBlocked: { type: Boolean, default: false },
     loginAttempts: { type: Number, default: 0 },

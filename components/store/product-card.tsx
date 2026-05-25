@@ -7,6 +7,8 @@ import { cn, formatCurrency, getDiscountPercent } from '@/lib/utils'
 import { useCart } from '@/hooks/use-cart'
 import { useTrack } from '@/hooks/use-track'
 import { LightboxTrigger } from '@/components/ui/image-lightbox'
+import { useIsAuthenticated } from '@/components/store/auth-context'
+import { Lock } from 'lucide-react'
 
 interface ProductCardProps {
   product: {
@@ -19,25 +21,37 @@ interface ProductCardProps {
     tags: string[]
     categoryId?: { name: string; slug: string } | null
     description?: string
+    sku?: string
+    externalId?: string
+    stock?: number
   }
   className?: string
+}
+
+/** Retorna badge de esgotado. Null = produto disponível ou sem dado */
+function stockBadge(stock: number | undefined, externalId: string | undefined) {
+  if (!externalId || stock !== 0) return null
+  return { label: 'Esgotado', color: 'bg-red-100 text-red-600' }
 }
 
 export function ProductCard({ product, className }: ProductCardProps) {
   const { addItem, items, updateQuantity } = useCart()
   const { track } = useTrack()
+  const isAuthenticated = useIsAuthenticated()
 
   const hasPromo     = product.promoPrice && product.promoPrice > 0 && product.promoPrice < product.price
   const displayPrice = hasPromo ? product.promoPrice! : product.price
   const discountPct  = hasPromo ? getDiscountPercent(product.price, product.promoPrice!) : 0
   const imageUrl     = product.images[0]?.url ?? `https://picsum.photos/seed/${product.slug}/400/300`
 
-  const cartItem = items.find((i) => i.productId === product._id)
-  const qty      = cartItem?.quantity ?? 0
+  const cartItem   = items.find((i) => i.productId === product._id)
+  const qty        = cartItem?.quantity ?? 0
+  const badge      = stockBadge(product.stock, product.externalId)
+  const isEsgotado = product.externalId !== undefined && product.stock === 0
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation()
-    addItem({ productId: product._id, name: product.name, price: displayPrice, quantity: 1, imageUrl })
+    addItem({ productId: product._id, name: product.name, price: displayPrice, quantity: 1, imageUrl, sku: product.externalId ?? product.sku })
     track('add_to_cart', product._id)
   }
   const handleInc = (e: React.MouseEvent) => {
@@ -53,7 +67,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
   return (
     <Link
-      href={`/produto/${product.slug}`}
+      href={isAuthenticated ? `/produto/${product.slug}` : '/login'}
       className={cn(
         'group flex gap-3',
         /* Mobile: linha horizontal */
@@ -99,6 +113,12 @@ export function ProductCard({ product, className }: ProductCardProps) {
           {product.name}
         </p>
 
+        {badge && (
+          <span className={`self-start text-[10px] font-semibold px-1.5 py-0.5 rounded-md leading-none ${badge.color}`}>
+            {badge.label}
+          </span>
+        )}
+
         {plainDesc && (
           <p className="text-[11px] text-gray-400 line-clamp-1 leading-relaxed hidden md:block">
             {plainDesc}
@@ -107,47 +127,57 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
         {/* Preço + controles */}
         <div className="mt-auto pt-1.5 flex items-center justify-between gap-2">
-          <div className="flex flex-col leading-none">
-            {hasPromo && (
-              <span className="text-[10px] text-gray-400 line-through">
-                {formatCurrency(product.price)}
-              </span>
-            )}
-            <span className={cn(
-              'font-bold leading-none',
-              hasPromo ? 'text-red-600 text-[15px]' : 'text-gray-900 text-[15px]'
-            )}>
-              {formatCurrency(displayPrice)}
+          {isAuthenticated ? (
+            <>
+              <div className="flex flex-col leading-none">
+                {hasPromo && (
+                  <span className="text-[10px] text-gray-400 line-through">
+                    {formatCurrency(product.price)}
+                  </span>
+                )}
+                <span className={cn(
+                  'font-bold leading-none',
+                  hasPromo ? 'text-red-600 text-[15px]' : 'text-gray-900 text-[15px]'
+                )}>
+                  {formatCurrency(displayPrice)}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={handleDec}
+                  disabled={qty === 0}
+                  className={cn(
+                    'w-6 h-6 rounded-lg border flex items-center justify-center transition-all',
+                    qty === 0
+                      ? 'border-gray-100 text-gray-300 cursor-not-allowed'
+                      : 'border-gray-200 text-gray-600 hover:bg-gray-50 active:scale-95'
+                  )}
+                  aria-label="Diminuir"
+                >
+                  <Minus className="w-2.5 h-2.5" />
+                </button>
+
+                <span className="w-4 text-center text-xs font-bold text-gray-800 tabular-nums">
+                  {qty}
+                </span>
+
+                <button
+                  onClick={qty === 0 ? handleAdd : handleInc}
+                  disabled={isEsgotado}
+                  className="w-6 h-6 rounded-lg bg-purple-600 hover:bg-purple-700 flex items-center justify-center text-white active:scale-95 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                  aria-label={qty === 0 ? `Adicionar ${product.name}` : 'Aumentar'}
+                >
+                  <Plus className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            </>
+          ) : (
+            <span className="flex items-center gap-1.5 text-xs text-gray-400">
+              <Lock className="w-3 h-3" />
+              Faça login para ver o preço
             </span>
-          </div>
-
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={handleDec}
-              disabled={qty === 0}
-              className={cn(
-                'w-6 h-6 rounded-lg border flex items-center justify-center transition-all',
-                qty === 0
-                  ? 'border-gray-100 text-gray-300 cursor-not-allowed'
-                  : 'border-gray-200 text-gray-600 hover:bg-gray-50 active:scale-95'
-              )}
-              aria-label="Diminuir"
-            >
-              <Minus className="w-2.5 h-2.5" />
-            </button>
-
-            <span className="w-4 text-center text-xs font-bold text-gray-800 tabular-nums">
-              {qty}
-            </span>
-
-            <button
-              onClick={qty === 0 ? handleAdd : handleInc}
-              className="w-6 h-6 rounded-lg bg-purple-600 hover:bg-purple-700 flex items-center justify-center text-white active:scale-95 transition-all shadow-sm"
-              aria-label={qty === 0 ? `Adicionar ${product.name}` : 'Aumentar'}
-            >
-              <Plus className="w-2.5 h-2.5" />
-            </button>
-          </div>
+          )}
         </div>
       </div>
     </Link>

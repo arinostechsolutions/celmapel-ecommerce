@@ -14,19 +14,35 @@ import {
   Store,
   X,
   FileBarChart2,
+  Percent,
+  ClipboardList,
+  ShieldCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { UNRESTRICTED_ROLES } from '@/lib/permissions'
 
-const navItems = [
-  { href: '/dashboard', label: 'Visão Geral', icon: LayoutDashboard, exact: true },
-  { href: '/dashboard/produtos', label: 'Produtos', icon: Package },
-  { href: '/dashboard/categorias', label: 'Categorias', icon: Tag },
-  { href: '/dashboard/banners', label: 'Banners', icon: Image },
-  { href: '/dashboard/campanhas', label: 'Campanhas', icon: Megaphone },
-  { href: '/dashboard/clientes', label: 'Clientes', icon: Users },
-  { href: '/dashboard/relatorio', label: 'Relatório', icon: FileBarChart2 },
-  { href: '/dashboard/configuracoes', label: 'Configurações', icon: Settings },
+interface NavItemDef {
+  href: string
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  exact?: boolean
+  permKey?: string   // chave de permissão (undefined = sempre visível)
+  ownerOnly?: boolean
+}
+
+const NAV_ITEMS: NavItemDef[] = [
+  { href: '/dashboard',              label: 'Visão Geral',   icon: LayoutDashboard, exact: true },
+  { href: '/dashboard/produtos',     label: 'Produtos',      icon: Package,         permKey: 'produtos' },
+  { href: '/dashboard/categorias',   label: 'Categorias',    icon: Tag,             permKey: 'categorias' },
+  { href: '/dashboard/banners',      label: 'Banners',       icon: Image,           permKey: 'banners' },
+  { href: '/dashboard/campanhas',    label: 'Campanhas',     icon: Megaphone,       permKey: 'campanhas' },
+  { href: '/dashboard/clientes',     label: 'Clientes',      icon: Users,           permKey: 'clientes' },
+  { href: '/dashboard/promocoes',    label: 'Promoções',     icon: Percent,         permKey: 'promocoes' },
+  { href: '/dashboard/relatorio',    label: 'Relatório',     icon: FileBarChart2,   permKey: 'relatorio' },
+  { href: '/dashboard/logs',         label: 'Logs',          icon: ClipboardList,   permKey: 'logs' },
+  { href: '/dashboard/configuracoes',label: 'Configurações', icon: Settings,        permKey: 'configuracoes' },
+  { href: '/dashboard/permissoes',   label: 'Permissões',    icon: ShieldCheck,     ownerOnly: true },
 ]
 
 function NavItem({
@@ -34,18 +50,22 @@ function NavItem({
   label,
   icon: Icon,
   exact,
+  effectivePath,
+  onNavigate,
 }: {
   href: string
   label: string
   icon: React.ComponentType<{ className?: string }>
   exact?: boolean
+  effectivePath: string
+  onNavigate: (href: string) => void
 }) {
-  const pathname = usePathname() ?? ''
-  const isActive = exact ? pathname === href : pathname.startsWith(href)
+  const isActive = exact ? effectivePath === href : effectivePath.startsWith(href)
 
   return (
     <Link
       href={href}
+      onClick={() => onNavigate(href)}
       className={cn(
         'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors group',
         isActive
@@ -67,9 +87,38 @@ interface DashboardSidebarProps {
 
 export function DashboardSidebar({ mobileOpen, onClose }: DashboardSidebarProps) {
   const pathname = usePathname()
+  const [role, setRole]               = useState<string | null>(null)
+  const [permissions, setPermissions] = useState<string[] | null>(null)
+  const [pendingHref, setPendingHref] = useState<string | null>(null)
 
-  // Fecha o menu ao navegar
-  useEffect(() => { onClose() }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps
+  // effectivePath: usa o pending imediatamente, voltando ao real quando a rota confirmar
+  const effectivePath = pendingHref ?? pathname ?? ''
+
+  // Limpa o pending quando a rota confirmar
+  useEffect(() => { setPendingHref(null); onClose() }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Busca role + permissions do usuário logado uma única vez
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.ok ? r.json() : null)
+      .then((json) => {
+        if (json?.data) {
+          setRole(json.data.role)
+          setPermissions(json.data.permissions ?? [])
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const isUnrestricted = role ? UNRESTRICTED_ROLES.includes(role) : false
+
+  const visibleItems = NAV_ITEMS.filter((item) => {
+    if (item.ownerOnly) return role === 'owner' || role === 'master'
+    if (!item.permKey)  return true   // Visão Geral — sempre visível
+    if (isUnrestricted) return true
+    if (permissions === null) return true   // ainda carregando — mostra tudo
+    return permissions.includes(item.permKey)
+  })
 
   return (
     <>
@@ -110,8 +159,13 @@ export function DashboardSidebar({ mobileOpen, onClose }: DashboardSidebarProps)
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-          {navItems.map((item) => (
-            <NavItem key={item.href} {...item} />
+          {visibleItems.map((item) => (
+            <NavItem
+              key={item.href}
+              {...item}
+              effectivePath={effectivePath}
+              onNavigate={setPendingHref}
+            />
           ))}
         </nav>
 

@@ -11,6 +11,9 @@ const PROTECTED_API_PATHS = [
   '/api/settings',
   '/api/sync',
   '/api/upload',
+  '/api/activity-logs',
+  '/api/users',
+  '/api/relatorio',
 ]
 
 function isDashboard(pathname: string) {
@@ -35,7 +38,7 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
 
     try {
       const payload = await verifyAccessTokenEdge(token)
-      if (!['owner', 'manager', 'viewer'].includes(payload.role)) {
+      if (!['master', 'owner', 'manager', 'viewer'].includes(payload.role)) {
         return NextResponse.redirect(new URL('/dashboard/login', req.url))
       }
     } catch {
@@ -88,5 +91,8 @@ export const config = {
     '/api/settings/:path*',
     '/api/sync/:path*',
     '/api/upload/:path*',
+    '/api/activity-logs/:path*',
+    '/api/users/:path*',
+    '/api/relatorio/:path*',
   ],
 }

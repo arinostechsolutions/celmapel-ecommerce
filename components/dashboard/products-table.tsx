@@ -72,6 +72,7 @@ export function ProductsTable({ products, q = '', status = '' }: ProductsTablePr
     }
   }
 
+
   return (
     <div>
       {/* Filtros */}

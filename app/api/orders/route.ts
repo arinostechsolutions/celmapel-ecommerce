@@ -8,21 +8,39 @@ import { verifyAccessToken } from '@/lib/auth/jwt'
 
 const DEFAULT_STORE_ID = process.env.DEFAULT_STORE_ID ?? ''
 
+const PAYMENT_LABELS: Record<string, string> = {
+  pix: 'PIX',
+  debit: 'Cartão de Débito',
+  credit: 'Cartão de Crédito',
+}
+
+const DELIVERY_LABELS: Record<string, string> = {
+  delivery: 'Entrega',
+  pickup: 'Retirada na loja',
+}
+
 function buildWhatsAppMessage(
-  items: Array<{ name: string; quantity: number; price: number }>,
+  items: Array<{ name: string; quantity: number; price: number; sku?: string }>,
   total: number,
   discount: number,
   couponCode?: string,
-  template?: string
+  template?: string,
+  deliveryType?: string,
+  paymentMethod?: string,
 ): string {
   const itemsList = items
-    .map((i) => `• ${i.quantity}x ${i.name} — R$ ${(i.price * i.quantity).toFixed(2).replace('.', ',')}`)
+    .map((i) => {
+      const code = i.sku ? ` [Cód: ${i.sku}]` : ''
+      return `• ${i.quantity}x ${i.name}${code} — R$ ${(i.price * i.quantity).toFixed(2).replace('.', ',')}`
+    })
     .join('\n')
 
   const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0)
   const couponLine = couponCode && discount > 0
     ? `Cupom ${couponCode}: -R$ ${discount.toFixed(2).replace('.', ',')}\n`
     : ''
+  const deliveryLine = deliveryType ? `\n🚚 *${DELIVERY_LABELS[deliveryType] ?? deliveryType}*` : ''
+  const paymentLine = paymentMethod ? `\n💳 *Pagamento: ${PAYMENT_LABELS[paymentMethod] ?? paymentMethod}*` : ''
 
   if (template) {
     return template
@@ -30,9 +48,11 @@ function buildWhatsAppMessage(
       .replace('{subtotal}', `R$ ${subtotal.toFixed(2).replace('.', ',')}`)
       .replace('{total}', `R$ ${total.toFixed(2).replace('.', ',')}`)
       .replace('{cupom}', couponLine)
+      .replace('{entrega}', deliveryLine)
+      .replace('{pagamento}', paymentLine)
   }
 
-  return `Olá! Gostaria de fazer o seguinte pedido:\n\n${itemsList}\n\n${couponLine}*Total: R$ ${total.toFixed(2).replace('.', ',')}*\n\nAguardo confirmação!`
+  return `Olá! Gostaria de fazer o seguinte pedido:\n\n${itemsList}\n\n${couponLine}*Total: R$ ${total.toFixed(2).replace('.', ',')}*${deliveryLine}${paymentLine}\n\nAguardo confirmação!`
 }
 
 export async function POST(req: NextRequest) {
@@ -52,7 +72,7 @@ export async function POST(req: NextRequest) {
 
     // Itens vêm do cliente (Zustand) — o carrinho é gerenciado localmente
     const clientItems = body.items as Array<{
-      productId: string; name: string; price: number; quantity: number; imageUrl?: string
+      productId: string; name: string; price: number; quantity: number; imageUrl?: string; sku?: string
     }> | undefined
 
     if (!clientItems || clientItems.length === 0) {
@@ -65,8 +85,10 @@ export async function POST(req: NextRequest) {
     const utmSource   = body.utmSource   as string | undefined
     const utmMedium   = body.utmMedium   as string | undefined
     const utmCampaign = body.utmCampaign as string | undefined
-    const couponCode  = body.couponCode  as string | undefined
+    const couponCode     = body.couponCode     as string | undefined
     const discountAmount = Number(body.discountAmount ?? 0)
+    const deliveryType   = body.deliveryType   as string | undefined
+    const paymentMethod  = body.paymentMethod  as string | undefined
 
     const subtotal = clientItems.reduce((s, i) => s + i.price * i.quantity, 0)
     const total    = Math.max(0, subtotal - discountAmount)
@@ -81,7 +103,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const message = buildWhatsAppMessage(clientItems, total, discountAmount, couponCode, store.whatsappTemplate)
+    const message = buildWhatsAppMessage(
+      clientItems, total, discountAmount, couponCode,
+      store.whatsappTemplate, deliveryType, paymentMethod
+    )
 
     const phone = `${store.whatsappDDI}${store.whatsappPhone.replace(/\D/g, '')}`
     const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`

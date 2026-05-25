@@ -6,6 +6,7 @@ import { sanitizeHtml } from '@/lib/security/sanitize'
 import { ok, badRequest, notFound, internalError, unauthorized, forbidden } from '@/lib/api/response'
 import { requireAuth, requireDashboardAccess } from '@/lib/api/auth-guard'
 import { destroyCloudinaryAsset } from '@/lib/cloudinary/sign'
+import { logActivity } from '@/lib/api/log-activity'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -97,6 +98,38 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     )
 
     if (!product) return notFound('Produto não encontrado')
+
+    // Logs granulares por campo alterado
+    const logBase = {
+      storeId:  storeId!,
+      userId:   payload.sub,
+      userName: payload.email ?? 'sistema',
+      entity:   'product',
+      entityId: id,
+    }
+
+    if (data.price !== undefined && data.price !== current.price) {
+      logActivity({ ...logBase, action: 'price_changed', details: { from: current.price, to: data.price, product: product.name } })
+    }
+    if (data.promoPrice !== undefined && data.promoPrice !== current.promoPrice) {
+      logActivity({ ...logBase, action: 'promo_price_changed', details: { from: current.promoPrice, to: data.promoPrice, product: product.name } })
+    }
+    if (data.name !== undefined && data.name !== current.name) {
+      logActivity({ ...logBase, action: 'product_updated', details: { field: 'name', from: current.name, to: data.name } })
+    }
+    if (data.images !== undefined) {
+      const oldCount = (current.images as unknown[]).length
+      const newCount = data.images.length
+      if (newCount > oldCount) {
+        logActivity({ ...logBase, action: 'image_uploaded', details: { product: product.name, count: newCount - oldCount } })
+      } else if (newCount < oldCount) {
+        logActivity({ ...logBase, action: 'image_deleted', details: { product: product.name, count: oldCount - newCount } })
+      }
+    }
+    if (data.status !== undefined && data.status !== current.status) {
+      logActivity({ ...logBase, action: 'product_status_changed', details: { from: current.status, to: data.status, product: product.name } })
+    }
+
     return ok(product)
   } catch (err) {
     return internalError(err)
@@ -136,6 +169,16 @@ export async function DELETE(req: NextRequest, { params }: Params) {
       deletedAt: new Date(),
       showOnSite: false,
       status: 'inactive',
+    })
+
+    logActivity({
+      storeId:  storeId!,
+      userId:   payload.sub,
+      userName: payload.email ?? 'sistema',
+      action:   'product_deleted',
+      entity:   'product',
+      entityId: id,
+      details:  { product: product.name },
     })
 
     return ok({ message: 'Produto removido' })

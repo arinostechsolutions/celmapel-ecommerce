@@ -13,7 +13,7 @@ async function getHomeData() {
     await connectDB()
     const now = new Date()
 
-    const [banners, featured, bestSellers, promoProducts] = await Promise.all([
+    const [banners, featured, promoProducts] = await Promise.all([
       Banner.find({
         storeId: DEFAULT_STORE_ID,
         isActive: true,
@@ -34,13 +34,6 @@ async function getHomeData() {
         status: 'published',
         showOnSite: true,
         isDeleted: false,
-      }).populate('categoryId', 'name slug').sort({ orderCount: -1 }).limit(8).lean(),
-
-      Product.find({
-        storeId: DEFAULT_STORE_ID,
-        status: 'published',
-        showOnSite: true,
-        isDeleted: false,
         promoPrice: { $exists: true, $gt: 0 },
       }).populate('categoryId', 'name slug').sort({ createdAt: -1 }).limit(8).lean(),
     ])
@@ -48,16 +41,15 @@ async function getHomeData() {
     return {
       banners: serialize(banners),
       featured: serialize(featured),
-      bestSellers: serialize(bestSellers),
       promoProducts: serialize(promoProducts),
     }
   } catch {
-    return { banners: [], featured: [], bestSellers: [], promoProducts: [] }
+    return { banners: [], featured: [], promoProducts: [] }
   }
 }
 
 export default async function HomePage() {
-  const { banners, featured, bestSellers, promoProducts } = await getHomeData()
+  const { banners, featured, promoProducts } = await getHomeData()
 
   return (
     <div className="space-y-10">
@@ -73,14 +65,6 @@ export default async function HomePage() {
         />
       )}
 
-      {bestSellers.length > 0 && (
-        <ProductsSection
-          title="Mais Vendidos"
-          products={bestSellers as unknown as Parameters<typeof ProductsSection>[0]['products']}
-          viewAllHref="/busca?sort=orderCount"
-        />
-      )}
-
       {promoProducts.length > 0 && (
         <ProductsSection
           title="Promoções"
@@ -90,7 +74,7 @@ export default async function HomePage() {
         />
       )}
 
-      {featured.length === 0 && bestSellers.length === 0 && (
+      {featured.length === 0 && promoProducts.length === 0 && (
         <div className="text-center py-20 text-gray-400">
           <p className="text-lg font-medium">Nenhum produto disponível</p>
           <p className="text-sm mt-1">Configure o DEFAULT_STORE_ID e rode o seed</p>

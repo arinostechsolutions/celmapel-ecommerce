@@ -11,6 +11,8 @@ import { ProductsSection } from './products-section'
 import { useCart } from '@/hooks/use-cart'
 import { useTrack } from '@/hooks/use-track'
 import { formatCurrency, getDiscountPercent } from '@/lib/utils'
+import { useIsAuthenticated } from '@/components/store/auth-context'
+import { Lock } from 'lucide-react'
 
 interface Product {
   _id: string
@@ -23,6 +25,9 @@ interface Product {
   tags: string[]
   variations: Array<{ name: string; options: string[] }>
   categoryId?: { name: string; slug: string } | null
+  stock?: number
+  externalId?: string
+  sku?: string
 }
 
 interface ProductDetailProps {
@@ -38,6 +43,7 @@ export function ProductDetail({ product, related }: ProductDetailProps) {
   const [shared, setShared] = useState(false)
   const { addItem } = useCart()
   const { track } = useTrack()
+  const isAuthenticated = useIsAuthenticated()
 
   // Registra visualização uma única vez ao montar
   useEffect(() => {
@@ -45,9 +51,13 @@ export function ProductDetail({ product, related }: ProductDetailProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product._id])
 
-  const hasPromo = product.promoPrice && product.promoPrice > 0 && product.promoPrice < product.price
+  const hasPromo     = product.promoPrice && product.promoPrice > 0 && product.promoPrice < product.price
   const displayPrice = hasPromo ? product.promoPrice! : product.price
-  const discountPct = hasPromo ? getDiscountPercent(product.price, product.promoPrice!) : 0
+  const discountPct  = hasPromo ? getDiscountPercent(product.price, product.promoPrice!) : 0
+  const isEsgotado = !!product.externalId && product.stock === 0
+  const stockLabel = isEsgotado
+    ? { label: 'Esgotado', color: 'bg-red-100 text-red-600 border-red-200' }
+    : null
   const images = product.images.length > 0
     ? product.images
     : [{ url: `https://picsum.photos/seed/${product._id}/600/600`, alt: product.name, order: 0, publicId: '' }]
@@ -60,6 +70,7 @@ export function ProductDetail({ product, related }: ProductDetailProps) {
       quantity,
       imageUrl: images[0]?.url,
       selectedVariations,
+      sku: product.externalId ?? product.sku,
     })
     track('add_to_cart', product._id)
     setAdded(true)
@@ -94,7 +105,7 @@ export function ProductDetail({ product, related }: ProductDetailProps) {
         {/* Gallery */}
         <div className="space-y-3">
           <div className="relative aspect-square rounded-2xl overflow-hidden bg-white border border-gray-100 md:max-h-[360px] md:mx-auto md:w-full">
-            <LightboxTrigger src={images[activeImage].url} alt={images[activeImage].alt ?? product.name} className="absolute inset-0">
+            <LightboxTrigger src={images[activeImage].url} alt={images[activeImage].alt ?? product.name} className="w-full h-full">
               <div className="relative w-full h-full">
                 <Image
                   src={images[activeImage].url}
@@ -159,19 +170,29 @@ export function ProductDetail({ product, related }: ProductDetailProps) {
           )}
 
           {/* Preço */}
-          <div>
-            {hasPromo && (
-              <p className="text-base text-gray-400 line-through">{formatCurrency(product.price)}</p>
-            )}
-            <div className="flex items-baseline gap-3">
-              <p className={`text-3xl font-bold ${hasPromo ? 'text-red-600' : 'text-gray-900'}`}>
-                {formatCurrency(displayPrice)}
-              </p>
+          {isAuthenticated ? (
+            <div>
               {hasPromo && (
-                <Badge variant="danger" className="text-sm px-2.5 py-1">-{discountPct}%</Badge>
+                <p className="text-base text-gray-400 line-through">{formatCurrency(product.price)}</p>
               )}
+              <div className="flex items-baseline gap-3">
+                <p className={`text-3xl font-bold ${hasPromo ? 'text-red-600' : 'text-gray-900'}`}>
+                  {formatCurrency(displayPrice)}
+                </p>
+                {hasPromo && (
+                  <Badge variant="danger" className="text-sm px-2.5 py-1">-{discountPct}%</Badge>
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-purple-50 hover:text-purple-700 text-gray-500 text-sm font-medium transition-colors"
+            >
+              <Lock className="w-4 h-4" />
+              Faça login para ver o preço
+            </Link>
+          )}
 
           {/* Variações */}
           {product.variations.map((variation) => (
@@ -195,73 +216,82 @@ export function ProductDetail({ product, related }: ProductDetailProps) {
             </div>
           ))}
 
-          {/* ── Mobile: ação compacta inline ─────────────────── */}
-          <div className="md:hidden bg-gray-50 rounded-2xl p-3 space-y-3">
-            {/* Linha: qty + botão adicionar + compartilhar */}
-            <div className="flex items-center gap-2">
-              {/* Qty */}
-              <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 px-1 py-1">
-                <button onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="w-9 h-9 flex items-center justify-center text-gray-500 active:scale-95 transition-all">
-                  <Minus className="w-3.5 h-3.5" />
-                </button>
-                <span className="w-6 text-center text-sm font-bold tabular-nums">{quantity}</span>
-                <button onClick={() => setQuantity((q) => Math.min(99, q + 1))}
-                  className="w-9 h-9 flex items-center justify-center text-gray-500 active:scale-95 transition-all">
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
+          {/* Badge de estoque */}
+          {stockLabel && (
+            <span className={`inline-flex self-start text-xs font-semibold px-2.5 py-1 rounded-lg border ${stockLabel.color}`}>
+              {stockLabel.label}
+            </span>
+          )}
+
+          {isAuthenticated ? (
+            <>
+              {/* ── Mobile: ação compacta inline ─────────────────── */}
+              <div className="md:hidden bg-gray-50 rounded-2xl p-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 px-1 py-1">
+                    <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} disabled={isEsgotado}
+                      className="w-9 h-9 flex items-center justify-center text-gray-500 active:scale-95 transition-all disabled:opacity-40">
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="w-6 text-center text-sm font-bold tabular-nums">{quantity}</span>
+                    <button onClick={() => setQuantity((q) => Math.min(99, q + 1))} disabled={isEsgotado}
+                      className="w-9 h-9 flex items-center justify-center text-gray-500 active:scale-95 transition-all disabled:opacity-40">
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={isEsgotado}
+                    className={`flex-1 h-10 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
+                      added ? 'bg-green-500 text-white' : 'bg-purple-600 text-white'
+                    }`}
+                  >
+                    {added ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
+                    {isEsgotado ? 'Produto esgotado' : added ? 'Adicionado!' : 'Adicionar ao carrinho'}
+                  </button>
+                  <button onClick={handleShare}
+                    className="w-10 h-10 rounded-xl border border-gray-200 bg-white flex items-center justify-center text-gray-500 active:scale-95 transition-all shrink-0">
+                    {shared ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
-              {/* Adicionar */}
-              <button
-                onClick={handleAddToCart}
-                className={`flex-1 h-10 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-sm ${
-                  added ? 'bg-green-500 text-white' : 'bg-purple-600 text-white'
-                }`}
-              >
-                {added ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
-                {added ? 'Adicionado!' : 'Adicionar ao carrinho'}
-              </button>
-
-              {/* Compartilhar */}
-              <button onClick={handleShare}
-                className="w-10 h-10 rounded-xl border border-gray-200 bg-white flex items-center justify-center text-gray-500 active:scale-95 transition-all shrink-0">
-                {shared ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-
-          {/* ── Desktop: quantidade + ações ──────────────────────── */}
-          <div className="hidden md:flex items-center gap-3 pt-1">
-            {/* Qty */}
-            <div className="flex items-center gap-1.5 bg-gray-50 rounded-xl px-2 py-1.5 border border-gray-100">
-              <button onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:bg-white hover:text-gray-800 transition-colors">
-                <Minus className="w-3.5 h-3.5" />
-              </button>
-              <span className="w-7 text-center text-sm font-bold tabular-nums">{quantity}</span>
-              <button onClick={() => setQuantity((q) => Math.min(99, q + 1))}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:bg-white hover:text-gray-800 transition-colors">
-                <Plus className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* Adicionar */}
-            <button onClick={handleAddToCart}
-              className={`h-10 px-5 rounded-xl font-semibold text-sm flex items-center gap-2 transition-all shadow-sm active:scale-[0.98] ${
-                added ? 'bg-green-500 text-white' : 'bg-purple-600 hover:bg-purple-700 text-white'
-              }`}>
-              {added ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
-              {added ? 'Adicionado!' : 'Adicionar ao carrinho'}
-            </button>
-
-            {/* Compartilhar */}
-            <button onClick={handleShare}
-              className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-gray-400 hover:text-purple-600 hover:border-purple-200 hover:bg-purple-50 transition-colors"
-              title="Compartilhar">
-              {shared ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
-            </button>
-          </div>
+              {/* ── Desktop: quantidade + ações ──────────────────────── */}
+              <div className="hidden md:flex items-center gap-3 pt-1">
+                <div className="flex items-center gap-1.5 bg-gray-50 rounded-xl px-2 py-1.5 border border-gray-100">
+                  <button onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:bg-white hover:text-gray-800 transition-colors">
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="w-7 text-center text-sm font-bold tabular-nums">{quantity}</span>
+                  <button onClick={() => setQuantity((q) => Math.min(99, q + 1))}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:bg-white hover:text-gray-800 transition-colors">
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <button onClick={handleAddToCart} disabled={isEsgotado}
+                  className={`h-10 px-5 rounded-xl font-semibold text-sm flex items-center gap-2 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
+                    added ? 'bg-green-500 text-white' : 'bg-purple-600 hover:bg-purple-700 text-white'
+                  }`}>
+                  {added ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
+                  {added ? 'Adicionado!' : 'Adicionar ao carrinho'}
+                </button>
+                <button onClick={handleShare}
+                  className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-gray-400 hover:text-purple-600 hover:border-purple-200 hover:bg-purple-50 transition-colors"
+                  title="Compartilhar">
+                  {shared ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
+                </button>
+              </div>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm transition-colors"
+            >
+              <Lock className="w-4 h-4" />
+              Faça login para comprar
+            </Link>
+          )}
 
           {/* Descrição */}
           {product.description && (

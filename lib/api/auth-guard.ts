@@ -28,5 +28,9 @@ export function requireRole(payload: JwtPayload, roles: string[]): void {
 }
 
 export function requireDashboardAccess(payload: JwtPayload): void {
-  requireRole(payload, ['owner', 'manager', 'viewer'])
+  requireRole(payload, ['master', 'owner', 'manager', 'viewer'])
+}
+
+export function requireMasterAccess(payload: JwtPayload): void {
+  requireRole(payload, ['master'])
 }

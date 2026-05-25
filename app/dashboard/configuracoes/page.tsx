@@ -37,7 +37,7 @@ export default function SettingsPage() {
     defaultValues: {
       primaryColor: '#9333ea',
       whatsappDDI: '55',
-      whatsappTemplate: 'Olá! Gostaria de fazer o seguinte pedido:\n\n{itens}\n\n{cupom}*Total: {total}*',
+      whatsappTemplate: 'Olá! Gostaria de fazer o seguinte pedido:\n\n{itens}\n\n{cupom}*Total: {total}*\n{entrega}\n{pagamento}\n\nAguardo confirmação!',
     },
   })
 
@@ -197,7 +197,12 @@ export default function SettingsPage() {
 
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-gray-700">Template da mensagem WhatsApp</label>
-          <p className="text-xs text-gray-400 mb-1">Variáveis: {'{itens}'}, {'{total}'}, {'{cupom}'}</p>
+          <p className="text-xs text-gray-400 mb-1">
+            Variáveis disponíveis:{' '}
+            {['{itens}', '{subtotal}', '{total}', '{cupom}', '{entrega}', '{pagamento}'].map((v) => (
+              <code key={v} className="mx-0.5 px-1 py-0.5 bg-gray-100 rounded text-gray-600 font-mono">{v}</code>
+            ))}
+          </p>
           <textarea
             rows={5}
             className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"

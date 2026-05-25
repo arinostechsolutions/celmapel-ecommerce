@@ -7,9 +7,12 @@ import { signAccessToken, signRefreshToken } from '@/lib/auth/jwt'
 import { checkRateLimit } from '@/lib/security/rate-limit'
 import { validateCPF } from '@/lib/security/validate'
 import { ok, badRequest, unauthorized, internalError } from '@/lib/api/response'
+import { logActivity } from '@/lib/api/log-activity'
 
 const MAX_ATTEMPTS = 5
 const LOCK_MS = 15 * 60 * 1000
+
+const DASHBOARD_ROLES = ['master', 'owner', 'manager', 'viewer']
 
 const LoginSchema = z.object({
   cpf: z
@@ -19,6 +22,7 @@ const LoginSchema = z.object({
     .refine((v) => v.length === 11, 'CPF deve ter 11 dígitos')
     .refine((v) => validateCPF(v), 'CPF inválido'),
   password: z.string().min(1, 'Senha obrigatória'),
+  dashboard: z.boolean().optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -33,7 +37,7 @@ export async function POST(req: NextRequest) {
       return badRequest('Dados inválidos', parsed.error.flatten().fieldErrors)
     }
 
-    const { cpf, password } = parsed.data
+    const { cpf, password, dashboard } = parsed.data
 
     await connectDB()
 
@@ -51,6 +55,11 @@ export async function POST(req: NextRequest) {
     if (user.lockUntil && user.lockUntil > new Date()) {
       const remaining = Math.ceil((user.lockUntil.getTime() - Date.now()) / 60000)
       return unauthorized(`Conta bloqueada temporariamente. Tente novamente em ${remaining} min.`)
+    }
+
+    // Bloqueia antes de verificar a senha para não revelar que o usuário existe
+    if (dashboard && !DASHBOARD_ROLES.includes(user.role)) {
+      return unauthorized('CPF ou senha inválidos')
     }
 
     const isValid = await comparePassword(password, user.passwordHash)
@@ -85,6 +94,18 @@ export async function POST(req: NextRequest) {
 
     const tokens = [...(user.refreshTokens ?? []), refreshToken].slice(-5)
     await User.findByIdAndUpdate(user._id, { refreshTokens: tokens })
+
+    if (user.storeId) {
+      logActivity({
+        storeId:  String(user.storeId),
+        userId:   String(user._id),
+        userName: user.name,
+        action:   'user_login',
+        entity:   'user',
+        entityId: String(user._id),
+        details:  { role: user.role },
+      })
+    }
 
     const response = ok({
       user: {

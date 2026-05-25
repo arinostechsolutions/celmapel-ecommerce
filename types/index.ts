@@ -5,7 +5,8 @@ export interface IUser {
   cpf?: string
   phone?: string
   passwordHash: string
-  role: 'customer' | 'owner' | 'manager' | 'viewer'
+  role: 'customer' | 'owner' | 'manager' | 'viewer' | 'master'
+  permissions: string[]
   storeId?: string
   isBlocked: boolean
   loginAttempts: number
@@ -30,6 +31,10 @@ export interface IStore {
   businessHours: BusinessHour[]
   customDomain?: string
   address?: string
+  deliveryEnabled: boolean
+  pickupEnabled: boolean
+  minDeliveryValue: number
+  paymentMethods: string[]
   createdAt: Date
   updatedAt: Date
 }
@@ -150,7 +155,20 @@ export interface ICartItem {
   price: number
   quantity: number
   imageUrl?: string
+  sku?: string
   selectedVariations?: Record<string, string>
+}
+
+export interface IActivityLog {
+  _id: string
+  storeId: string
+  userId?: string
+  userName: string
+  action: string
+  entity: string
+  entityId?: string
+  details?: Record<string, unknown>
+  createdAt: Date
 }
 
 export interface ICart {

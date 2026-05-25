@@ -19,6 +19,10 @@ export interface StoreDocument extends Document {
   businessHours: BusinessHour[]
   customDomain?: string
   address?: string
+  deliveryEnabled: boolean
+  pickupEnabled: boolean
+  minDeliveryValue: number
+  paymentMethods: string[]
   createdAt: Date
   updatedAt: Date
 }
@@ -50,6 +54,10 @@ const StoreSchema = new Schema<StoreDocument>(
     businessHours: { type: [BusinessHourSchema], default: [] },
     customDomain: { type: String },
     address: { type: String },
+    deliveryEnabled: { type: Boolean, default: true },
+    pickupEnabled: { type: Boolean, default: true },
+    minDeliveryValue: { type: Number, default: 0 },
+    paymentMethods: { type: [String], default: ['pix', 'debit', 'credit'] },
   },
   { timestamps: true }
 )

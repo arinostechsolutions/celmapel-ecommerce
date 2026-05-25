@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Search, ShoppingCart, X, User, LogOut, UserCircle2 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useCart, useCartTotals } from '@/hooks/use-cart'
 import { MiniCart } from './mini-cart'
 import { cn } from '@/lib/utils'
@@ -129,6 +129,7 @@ export function StoreHeader({ storeName, storeLogo }: HeaderProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const router = useRouter()
+  const pathname = usePathname()
   const { isMiniCartOpen, openMiniCart, closeMiniCart } = useCart()
   const { itemCount } = useCartTotals()
 
@@ -137,6 +138,26 @@ export function StoreHeader({ storeName, storeLogo }: HeaderProps) {
     window.addEventListener('scroll', handler, { passive: true })
     return () => window.removeEventListener('scroll', handler)
   }, [])
+
+  // Sincroniza o campo com o parâmetro da URL ao entrar na página de busca
+  useEffect(() => {
+    if (pathname?.startsWith('/busca')) {
+      const q = new URLSearchParams(window.location.search).get('q') ?? ''
+      setSearchQuery(q)
+    }
+  }, [pathname])
+
+  // Debounce: navega automaticamente 500ms após o usuário parar de digitar
+  useEffect(() => {
+    const trimmed = searchQuery.trim()
+    // Só aciona o debounce se estiver digitando ou se já estiver na página de busca (para limpar)
+    if (!trimmed && !pathname?.startsWith('/busca')) return
+    const timer = setTimeout(() => {
+      const navigate = pathname?.startsWith('/busca') ? router.replace : router.push
+      navigate(trimmed ? `/busca?q=${encodeURIComponent(trimmed)}` : '/busca')
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [searchQuery]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()

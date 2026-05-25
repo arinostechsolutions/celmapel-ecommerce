@@ -8,6 +8,7 @@ import { requireAuth, requireDashboardAccess } from '@/lib/api/auth-guard'
 import { checkRateLimit } from '@/lib/security/rate-limit'
 import slugify from 'slugify'
 import { mongoIdSchema } from '@/lib/security/validate'
+import { logActivity } from '@/lib/api/log-activity'
 
 const CreateProductSchema = z.object({
   name: z.string().min(1).max(200).trim(),
@@ -69,7 +70,14 @@ export async function GET(req: NextRequest) {
     }
 
     if (search) {
-      query.$text = { $search: search }
+      const re = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+      query.$or = [
+        { name: re },
+        { description: re },
+        { tags: re },
+        { sku: re },
+        { externalId: re },
+      ]
     }
 
     if (cursor) {
@@ -124,6 +132,16 @@ export async function POST(req: NextRequest) {
       ...data,
       slug,
       storeId: payload.storeId,
+    })
+
+    logActivity({
+      storeId:  payload.storeId!,
+      userId:   payload.sub,
+      userName: payload.email ?? 'sistema',
+      action:   'product_created',
+      entity:   'product',
+      entityId: String(product._id),
+      details:  { name: product.name },
     })
 
     return ok(product, 201)

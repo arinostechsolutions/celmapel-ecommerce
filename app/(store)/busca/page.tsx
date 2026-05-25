@@ -31,7 +31,10 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     showOnSite: true,
   }
 
-  if (q) query.$text = { $search: q }
+  if (q) {
+    const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+    query.$or = [{ name: re }, { description: re }, { tags: re }, { sku: re }]
+  }
   if (categoryId) query.categoryId = categoryId
   if (minPrice || maxPrice) {
     query.price = {
